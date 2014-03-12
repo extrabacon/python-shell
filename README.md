@@ -1,13 +1,13 @@
 # python-shell
 
-A simple way to run Python scripts from Node.js with basic but efficient inter-process communication through stdio.
+A simple way to run Python scripts from Node.js with basic but efficient inter-process communication and better error handling.
 
 ## Features
 
 + Reliably spawn Python scripts in a child process
 + Text, JSON and binary modes
 + Simple and efficient data transfers through stdin and stdout streams
-+ Extended stack traces in case an exception is thrown
++ Extended stack traces when an error is thrown
 
 ## Installation
 
@@ -25,6 +25,8 @@ npm test
 ### Running a Python script:
 
 ```js
+var PythonShell = require('python-shell');
+
 PythonShell.run('my_script.py', function (err) {
   if (err) throw err;
   console.log('finished');
@@ -36,6 +38,8 @@ If the script writes to stderr or exits with a non-zero code, an error will be t
 ### Running a Python script with arguments and options:
 
 ```js
+var PythonShell = require('python-shell');
+
 var options = {
   mode: 'text',
   pythonPath: 'path/to/python',
@@ -44,34 +48,24 @@ var options = {
   args: ['value1', 'value2', 'value3']
 };
 
-PythonShell.run('my_script.py', options, function (err) {
+PythonShell.run('my_script.py', options, function (err, results) {
   if (err) throw err;
+  // results is an array consisting of messages collected during execution
+  console.log('results: %j', results);
 });
 ```
-
-The options are:
-
-* `mode`: Configures how data is exchanged between the child process and its parent. The possible values are:
-  * `text`: each line of data (ending with "\n") is emitted as a message (default)
-  * `json`: each line of data (ending with "\n") is parsed as JSON and emitted as a message
-  * `binary`: data is streamed as-is through `stdout` nd `stdin`
-* `pythonPath`: The path where to locate the "python" executable. Default: "python"
-* `pythonOptions`: Array of option switches to pass to "python"
-* `scriptPath`: The default path where to look for scripts. Default: "./python"
-* `args`: Array of arguments to pass to the script
-
-Other options are forwarded to `child_process.spawn`.
 
 ### Exchanging data between Node and Python:
 
 ```js
+var PythonShell = require('python-shell');
 var pyshell = new PythonShell('my_script.py');
 
-// send a message to the Python script via stdin
+// sends a message to the Python script via stdin
 pyshell.send('hello');
 
 pyshell.on('message', function (message) {
-  // received a message emitted from the script via stdout
+  // received a message sent from the Python script (a simple "print" statement)
   console.log(message);
 });
 
@@ -84,13 +78,13 @@ pyshell.end(function (err) {
 
 Use `.send(message)` to send a message to the Python script. Attach the `message` event to listen to messages emitted from the Python script.
 
-For more details and examples, take a look at the unit tests.
+For more details and examples including Python source code, take a look at the tests.
 
 ### Error Handling and extended stack traces
 
-An error will be thrown if the process exits with a non-zero exit code or if data has been written to stderr. Additionally, if "stderr" contains a standard Python traceback, the error is augmented with Python exception details including a concatenated stack trace.
+An error will be thrown if the process exits with a non-zero exit code or if data has been written to stderr. Additionally, if "stderr" contains a formatted Python traceback, the error is augmented with Python exception details including a concatenated stack trace.
 
-Example error with traceback (from test/python/error.py):
+Sample error with traceback (from test/python/error.py):
 ```
 Traceback (most recent call last):
   File "test/python/error.py", line 6, in <module>
@@ -99,7 +93,7 @@ Traceback (most recent call last):
     print 1/0
 ZeroDivisionError: integer division or modulo by zero
 ```
-would result into:
+would result into the following error:
 ```js
 { [Error: ZeroDivisionError: integer division or modulo by zero]
   traceback: 'Traceback (most recent call last):\n  File "test/python/error.py", line 6, in <module>\n    divide_by_zero()\n  File "test/python/error.py", line 4, in divide_by_zero\n    print 1/0\nZeroDivisionError: integer division or modulo by zero\n',
@@ -122,6 +116,117 @@ Error: ZeroDivisionError: integer division or modulo by zero
     File "test/python/error.py", line 4, in divide_by_zero
       print 1/0
 ```
+
+## API Reference
+
+#### `PythonShell(script, options)` constructor
+
+Creates an instance of `PythonShell` and starts the Python process
+
+* `script`: the path of the script to execute
+* `options`: the execution options, consisting of:
+  * `mode`: Configures how data is exchanged when data flows through stdin and stdout. The possible values are:
+    * `text`: each line of data (ending with "\n") is emitted as a message (default)
+    * `json`: each line of data (ending with "\n") is parsed as JSON and emitted as a message
+    * `binary`: data is streamed as-is through `stdout` and `stdin`
+  * `pythonPath`: The path where to locate the "python" executable. Default: "python"
+  * `pythonOptions`: Array of option switches to pass to "python"
+  * `scriptPath`: The default path where to look for scripts. Default: "./python"
+  * `args`: Array of arguments to pass to the script
+
+Other options are forwarded to `child_process.spawn`.
+
+PythonShell instances have the following properties:
+* `script`: the path of the script to execute
+* `command`: the full command arguments passed to the Python executable
+* `stdin`: the Python stdin stream, used to send data to the child process
+* `stdout`: the Python stdout stream, used for receiving data from the child process
+* `stderr`: the Python stderr stream, used for communicating errors
+* `childProcess`: the process instance created via `child_process.spawn`
+* `terminated`: boolean indicating whether the process has exited
+* `exitCode`: the process exit code, available after the process has ended
+
+Example:
+```js
+// create a new instance
+var shell = new PythonShell('script.py', options);
+```
+
+#### `#defaultOptions`
+
+Configures default options for all new instances of PythonShell.
+
+Example:
+```js
+// setup a default "scriptPath"
+PythonShell.defaultOptions = { scriptPath: '../scripts' };
+```
+
+#### `#run(script, options, callback)`
+
+Runs the Python script and invokes `callback` with the results. The callback contains the execution error (if any) as well as an array of messages emitted from the Python script.
+
+This method is also returning the `PythonShell` instance.
+
+Example:
+```js
+// run a simple script
+PythonShell.run('script.py', function (err, results) {
+  // script finished
+});
+```
+
+#### `.send(message)`
+
+Sends a message to the Python script via stdin. The data is formatted according to the selected mode (text or JSON). This method can be overridden in order to format the data in some other way.
+
+This method should not be used in binary mode.
+
+Example:
+```js
+// send a message in text mode
+var shell = new PythonShell('script.py', { mode: 'text '});
+shell.send('hello world!');
+
+// send a message in JSON mode
+var shell = new PythonShell('script.py', { mode: 'json '});
+shell.send({ command: "do_stuff", args: [1, 2, 3] });
+```
+
+#### `.receive(data)`
+
+Parses incoming data from the Python script written via stdout and emits `message` events. The data is parsed as JSON if mode has been set to "json". This method is called automatically as data is being received from stdout and can be overridden to parse the data differently.
+
+#### `.end(callback)`
+
+Closes the stdin stream, allowing the Python script to finish and exit. The optional callback is invoked when the process is terminated.
+
+#### event: `message`
+
+Fires when a chunk of data is parsed from the stdout stream via the `receive` method. This event is not emitted in binary mode.
+
+Example:
+```js
+// receive a message in text mode
+var shell = new PythonShell('script.py', { mode: 'text '});
+shell.on('message', function (message) {
+  // handle message (a line of text from stdout)
+});
+
+// receive a message in JSON mode
+var shell = new PythonShell('script.py', { mode: 'json '});
+shell.on('message', function (message) {
+  // handle message (a line of text from stdout, parsed as JSON)
+});
+```
+
+#### event: `close`
+
+Fires when the process has been terminated, with an error or not.
+
+#### event: `error`
+
+Fires when the process terminates with a non-zero exit code, or if data is written to the stderr stream.
 
 ## License
 
