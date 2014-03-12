@@ -76,7 +76,7 @@ var PythonShell = function (script, options) {
                 exitCode: code
             });
             // do not emit error if only a callback is used
-            if (self.listeners('ererrror').length || !self._endCallback) {
+            if (self.listeners('error').length || !self._endCallback) {
                 self.emit('error', err);
             }
         }
