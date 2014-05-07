@@ -171,8 +171,14 @@ PythonShell.prototype.send = function (message) {
 PythonShell.prototype.receive = function (data) {
     var self = this;
     var lines = (''+data).split(/\n/g);
-    var lastLine = lines.pop();
 
+    if (lines.length === 1) {
+        // an incomplete record, keep buffering
+        this._remaining = (this._remaining || '') + lines[0];
+        return this;
+    }
+
+    var lastLine = lines.pop();
     // fix the first line with the remaining from the previous iteration of 'receive'
     lines[0] = (this._remaining || '') + lines[0];
     // keep the remaining for the next iteration of 'receive'
@@ -184,14 +190,16 @@ PythonShell.prototype.receive = function (data) {
                 self.emit('message', JSON.parse(line));
             } catch (err) {
                 self.emit('error', extend(
-                    new Error('invalid JSON message: ' + data),
-                    { inner: err, data: data}
+                    new Error('invalid JSON message: ' + data + ' >> ' + err),
+                    { inner: err, data: line}
                 ));
             }
         } else {
             self.emit('message', line);
         }
     });
+
+    return this;
 };
 
 /**
