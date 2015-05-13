@@ -129,6 +129,7 @@ Creates an instance of `PythonShell` and starts the Python process
     * `text`: each line of data (ending with "\n") is emitted as a message (default)
     * `json`: each line of data (ending with "\n") is parsed as JSON and emitted as a message
     * `binary`: data is streamed as-is through `stdout` and `stdin`
+  * `parser`: each line of data (ending with "\n") is parsed with this customer parser (overrides `mode`)
   * `pythonPath`: The path where to locate the "python" executable. Default: "python"
   * `pythonOptions`: Array of option switches to pass to "python"
   * `scriptPath`: The default path where to look for scripts. Default: "./python"
