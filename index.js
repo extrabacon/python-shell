@@ -42,6 +42,7 @@ var PythonShell = function (script, options) {
     this.script = path.join(options.scriptPath || './python', script);
     this.command = pythonOptions.concat(this.script, scriptArgs);
     this.mode = options.mode || 'text';
+    this.parser = options.parser;
     this.terminated = false;
     this.childProcess = spawn(pythonPath, this.command, options);
 
