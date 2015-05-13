@@ -185,21 +185,21 @@ PythonShell.prototype.receive = function (data) {
     this._remaining = lastLine;
 
     lines.forEach(function (line) {
-        if (self.mode === 'json') {
+        if (self.parser) {
+            try {
+                self.emit('message', self.parser(line));
+            } catch(err) {
+                self.emit('error', extend(
+                    new Error('invalid message: ' + data + ' >> ' + err),
+                    { inner: err, data: line}
+                ));
+            }
+        } else if (self.mode === 'json') {
             try {
                 self.emit('message', JSON.parse(line));
             } catch (err) {
                 self.emit('error', extend(
                     new Error('invalid JSON message: ' + data + ' >> ' + err),
-                    { inner: err, data: line}
-                ));
-            }
-        } else if (typeof self.mode === 'function') {
-            try {
-                self.emit('message', self.mode(line));
-            } catch(err) {
-                self.emit('error', extend(
-                    new Error('invalid message: ' + data + ' >> ' + err),
                     { inner: err, data: line}
                 ));
             }
