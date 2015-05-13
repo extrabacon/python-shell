@@ -194,6 +194,15 @@ PythonShell.prototype.receive = function (data) {
                     { inner: err, data: line}
                 ));
             }
+        } else if (typeof self.mode === 'function') {
+            try {
+                self.emit('message', self.mode(line));
+            } catch(err) {
+                self.emit('error', extend(
+                    new Error('invalid message: ' + data + ' >> ' + err),
+                    { inner: err, data: line}
+                ));
+            }
         } else {
             self.emit('message', line);
         }
