@@ -30,6 +30,17 @@ function extend(obj) {
  * @constructor
  */
 var PythonShell = function (script, options) {
+
+    function resolve(type, val) {
+        if (typeof val === 'string') {
+            // use a built-in function using its name
+            return PythonShell[type][val];
+        } else if (typeof val === 'function') {
+            // use a custom function
+            return val;
+        }
+    }
+
     var self = this;
     var errorData = '';
     EventEmitter.call(this);
@@ -42,19 +53,20 @@ var PythonShell = function (script, options) {
     this.script = path.join(options.scriptPath || './python', script);
     this.command = pythonOptions.concat(this.script, scriptArgs);
     this.mode = options.mode || 'text';
-    this.parser = options.parser;
+    this.formatter = resolve('format', options.formatter || this.mode);
+    this.parser = resolve('parse', options.parser || this.mode);
     this.terminated = false;
     this.childProcess = spawn(pythonPath, this.command, options);
 
     ['stdout', 'stdin', 'stderr'].forEach(function (name) {
         self[name] = self.childProcess[name];
-        self.mode !== 'binary' && self[name].setEncoding('utf8');
+        self.parser && self[name].setEncoding(options.encoding || 'utf8');
     });
 
-    // listen for incoming data on stdout
-    this.stdout.on('data', function (data) {
-        self.mode !== 'binary' && self.receive(data);
-    });
+    // parse incoming data on stdout
+    if (this.parser) {
+        this.stdout.on('data', PythonShell.prototype.receive.bind(this));
+    }
 
     // listen to stderr and emit errors for incoming data
     this.stderr.on('data', function (data) {
@@ -91,6 +103,27 @@ util.inherits(PythonShell, EventEmitter);
 
 // allow global overrides for options
 PythonShell.defaultOptions = {};
+
+// built-in formatters
+PythonShell.format = {
+    text: function toText(data) {
+        if (typeof data !== 'string') return data.toString();
+        return data;
+    },
+    json: function toJson(data) {
+        return JSON.stringify(data);
+    }
+};
+
+// built-in parsers
+PythonShell.parse = {
+    text: function asText(data) {
+        return data;
+    },
+    json: function asJson(data) {
+        return JSON.parse(data);
+    }
+};
 
 /**
  * Runs a Python script and returns collected messages
@@ -144,22 +177,14 @@ PythonShell.prototype.parseError = function (data) {
 
 /**
  * Sends a message to the Python shell through stdin
- * This method
  * Override this method to format data to be sent to the Python process
  * @param {string|Object} data The message to send
  * @returns {PythonShell} The same instance for chaining calls
  */
 PythonShell.prototype.send = function (message) {
-    if (this.mode === 'binary') {
-        throw new Error('cannot send a message in binary mode, use stdin directly instead');
-    } else if (this.mode === 'json') {
-        // write a JSON formatted message
-        this.stdin.write(JSON.stringify(message) + '\n');
-    } else {
-        // write text-based message (default)
-        if (typeof message !== 'string') message = message.toString();
-        this.stdin.write(message + '\n');
-    }
+    var data = this.formatter ? this.formatter(message) : message;
+    if (this.mode !== 'binary') data += '\n';
+    this.stdin.write(data);
     return this;
 };
 
@@ -171,41 +196,28 @@ PythonShell.prototype.send = function (message) {
  */
 PythonShell.prototype.receive = function (data) {
     var self = this;
-    var lines = (''+data).split(/\n/g);
+    var parts = (''+data).split(/\n/g);
 
-    if (lines.length === 1) {
+    if (parts.length === 1) {
         // an incomplete record, keep buffering
-        this._remaining = (this._remaining || '') + lines[0];
+        this._remaining = (this._remaining || '') + parts[0];
         return this;
     }
 
-    var lastLine = lines.pop();
+    var lastLine = parts.pop();
     // fix the first line with the remaining from the previous iteration of 'receive'
-    lines[0] = (this._remaining || '') + lines[0];
+    parts[0] = (this._remaining || '') + parts[0];
     // keep the remaining for the next iteration of 'receive'
     this._remaining = lastLine;
 
-    lines.forEach(function (line) {
-        if (self.parser) {
-            try {
-                self.emit('message', self.parser(line));
-            } catch(err) {
-                self.emit('error', extend(
-                    new Error('invalid message: ' + data + ' >> ' + err),
-                    { inner: err, data: line}
-                ));
-            }
-        } else if (self.mode === 'json') {
-            try {
-                self.emit('message', JSON.parse(line));
-            } catch (err) {
-                self.emit('error', extend(
-                    new Error('invalid JSON message: ' + data + ' >> ' + err),
-                    { inner: err, data: line}
-                ));
-            }
-        } else {
-            self.emit('message', line);
+    parts.forEach(function (part) {
+        try {
+            self.emit('message', self.parser(part));
+        } catch(err) {
+            self.emit('error', extend(
+                new Error('invalid message: ' + data + ' >> ' + err),
+                { inner: err, data: part}
+            ));
         }
     });
 

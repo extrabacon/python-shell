@@ -91,14 +91,35 @@ describe('PythonShell', function () {
                 done();
             });
         });
-        it('should throw when mode is "binary"', function (done) {
+        it('should use a custom formatter', function (done) {
             var pyshell = new PythonShell('echo_text.py', {
+                formatter: function (message) {
+                    return message.toUpperCase();
+                }
+            });
+            var output = '';
+            pyshell.stdout.on('data', function (data) {
+                output += ''+data;
+            });
+            pyshell.send('hello').send('world').end(function (err) {
+                if (err) return done(err);
+                output.should.be.exactly('HELLO\nWORLD\n');
+                done();
+            });
+        });
+        it('should write as-is when mode is "binary"', function (done) {
+            var pyshell = new PythonShell('echo_binary.py', {
                 mode: 'binary'
             });
-            (function () {
-                pyshell.send('hello world!');
-            }).should.throw();
-            pyshell.end(done);
+            var output = '';
+            pyshell.stdout.on('data', function (data) {
+                output += ''+data;
+            });
+            pyshell.send(new Buffer('i am not a string')).end(function (err) {
+                if (err) return done(err);
+                output.should.be.exactly('i am not a string');
+                done();
+            });
         });
     });
 
@@ -149,6 +170,22 @@ describe('PythonShell', function () {
                 throw new Error('should not emit messages in binary mode');
             };
             pyshell.end(done);
+        });
+        it('should use a custom parser function', function (done) {
+            var pyshell = new PythonShell('echo_text.py', {
+                mode: 'text',
+                parser: function (message) {
+                    return message.toUpperCase();
+                }
+            });
+            var count = 0;
+            pyshell.on('message', function (message) {
+                count === 0 && message.should.be.exactly('HELLO');
+                count === 1 && message.should.be.exactly('WORLD!');
+                count++;
+            }).on('close', function () {
+                count.should.be.exactly(2);
+            }).send('hello').send('world!').end(done);
         });
     });
 
