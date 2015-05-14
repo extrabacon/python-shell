@@ -107,7 +107,8 @@ PythonShell.defaultOptions = {};
 // built-in formatters
 PythonShell.format = {
     text: function toText(data) {
-        if (typeof data !== 'string') return data.toString();
+        if (!data) return '';
+        else if (typeof data !== 'string') return data.toString();
         return data;
     },
     json: function toJson(data) {
