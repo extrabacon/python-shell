@@ -5,7 +5,8 @@ A simple way to run Python scripts from Node.js with basic but efficient inter-p
 ## Features
 
 + Reliably spawn Python scripts in a child process
-+ Text, JSON and binary modes
++ Built-in text, JSON and binary modes
++ Custom parsers and formatters
 + Simple and efficient data transfers through stdin and stdout streams
 + Extended stack traces when an error is thrown
 
@@ -78,6 +79,12 @@ pyshell.end(function (err) {
 
 Use `.send(message)` to send a message to the Python script. Attach the `message` event to listen to messages emitted from the Python script.
 
+Use `options.mode` to quickly setup how data is sent and received between your Node and Python applications.
+
+  * use `text` mode for exchanging lines of text
+  * use `json` mode for exchanging JSON fragments
+  * use `binary` mode for anything else (data is sent and received as-is)
+
 For more details and examples including Python source code, take a look at the tests.
 
 ### Error Handling and extended stack traces
@@ -129,6 +136,9 @@ Creates an instance of `PythonShell` and starts the Python process
     * `text`: each line of data (ending with "\n") is emitted as a message (default)
     * `json`: each line of data (ending with "\n") is parsed as JSON and emitted as a message
     * `binary`: data is streamed as-is through `stdout` and `stdin`
+  * `formatter`: each message to send is transformed using this method, then appended with "\n"
+  * `parser`: each line of data (ending with "\n") is parsed with this function and its result is emitted as a message
+  * `encoding`: the text encoding to apply on the child process streams (default: "utf8")
   * `pythonPath`: The path where to locate the "python" executable. Default: "python"
   * `pythonOptions`: Array of option switches to pass to "python"
   * `scriptPath`: The default path where to look for scripts. Default: "./python"
@@ -178,9 +188,7 @@ PythonShell.run('script.py', function (err, results) {
 
 #### `.send(message)`
 
-Sends a message to the Python script via stdin. The data is formatted according to the selected mode (text or JSON). This method can be overridden in order to format the data in some other way.
-
-This method should not be used in binary mode.
+Sends a message to the Python script via stdin. The data is formatted according to the selected mode (text or JSON), or through a custom function when `formatter` is specified.
 
 Example:
 ```js
@@ -195,7 +203,7 @@ shell.send({ command: "do_stuff", args: [1, 2, 3] });
 
 #### `.receive(data)`
 
-Parses incoming data from the Python script written via stdout and emits `message` events. The data is parsed as JSON if mode has been set to "json". This method is called automatically as data is being received from stdout and can be overridden to parse the data differently.
+Parses incoming data from the Python script written via stdout and emits `message` events. This method is called automatically as data is being received from stdout.
 
 #### `.end(callback)`
 
@@ -203,7 +211,7 @@ Closes the stdin stream, allowing the Python script to finish and exit. The opti
 
 #### event: `message`
 
-Fires when a chunk of data is parsed from the stdout stream via the `receive` method. This event is not emitted in binary mode.
+Fires when a chunk of data is parsed from the stdout stream via the `receive` method. If a `parser` method is specified, the result of this function will be the message value. This event is not emitted in binary mode.
 
 Example:
 ```js
