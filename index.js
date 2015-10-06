@@ -50,7 +50,7 @@ var PythonShell = function (script, options) {
     var pythonOptions = toArray(options.pythonOptions);
     var scriptArgs = toArray(options.args);
 
-    this.script = path.join(options.scriptPath || './python', script);
+    this.script = path.join(options.scriptPath || './', script);
     this.command = pythonOptions.concat(this.script, scriptArgs);
     this.mode = options.mode || 'text';
     this.formatter = resolve('format', options.formatter || this.mode);
