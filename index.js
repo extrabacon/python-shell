@@ -212,14 +212,7 @@ PythonShell.prototype.receive = function (data) {
     this._remaining = lastLine;
 
     parts.forEach(function (part) {
-        try {
-            self.emit('message', self.parser(part));
-        } catch(err) {
-            self.emit('error', extend(
-                new Error('invalid message: ' + data + ' >> ' + err),
-                { inner: err, data: part}
-            ));
-        }
+        self.emit('message', self.parser(part));
     });
 
     return this;
