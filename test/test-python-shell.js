@@ -96,7 +96,7 @@ describe('PythonShell', function () {
                     done();
                 });
             });
-            it.only('holds a conversation', function (done) {
+            it('holds a conversation', function (done) {
                 var pyshell = new PythonShell('conversation.py', {
                     mode: 'json'
                 });
