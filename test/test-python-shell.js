@@ -63,32 +63,52 @@ describe('PythonShell', function () {
     });
 
     describe('.send(message)', function () {
-        it('should send string messages when mode is "text"', function (done) {
-            var pyshell = new PythonShell('echo_text.py', {
-                mode: 'text'
-            });
-            var output = '';
-            pyshell.stdout.on('data', function (data) {
-                output += ''+data;
-            });
-            pyshell.send('hello').send('world').end(function (err) {
-                if (err) return done(err);
-                output.should.be.exactly('hello\nworld\n');
-                done();
+        context('text mode', function() {
+            it('should send string messages', function (done) {
+                var pyshell = new PythonShell('echo_text.py', {
+                    mode: 'text'
+                });
+                var output = '';
+                pyshell.stdout.on('data', function (data) {
+                    output += ''+data;
+                });
+                pyshell.send('hello').send('world').end(function (err) {
+                    if (err) return done(err);
+                    output.should.be.exactly('hello\nworld\n');
+                    done();
+                });
+            });  
+        })
+        context('JSON mode', function() {
+            it('should send JSON messages', function (done) {
+                var pyshell = new PythonShell('echo_json.py', {
+                    mode: 'json'
+                });
+                var output = '';
+                pyshell.stdout.on('data', function (data) {
+                    output += ''+data;
+                });
+                pyshell.send({ a: 'b' }).send(null).send([1, 2, 3]).end(function (err) {
+                    if (err) return done(err);
+                    output.should.be.exactly('{"a": "b"}\nnull\n[1, 2, 3]\n');
+                    done();
+                });
             });
         });
-        it('should send JSON messages when mode is "json"', function (done) {
-            var pyshell = new PythonShell('echo_json.py', {
-                mode: 'json'
-            });
-            var output = '';
-            pyshell.stdout.on('data', function (data) {
-                output += ''+data;
-            });
-            pyshell.send({ a: 'b' }).send(null).send([1, 2, 3]).end(function (err) {
-                if (err) return done(err);
-                output.should.be.exactly('{"a": "b"}\nnull\n[1, 2, 3]\n');
-                done();
+        context('binary mode', function() {
+            it('should write as-is', function (done) {
+                var pyshell = new PythonShell('echo_binary.py', {
+                    mode: 'binary'
+                });
+                var output = '';
+                pyshell.stdout.on('data', function (data) {
+                    output += ''+data;
+                });
+                pyshell.send(new Buffer('i am not a string')).end(function (err) {
+                    if (err) return done(err);
+                    output.should.be.exactly('i am not a string');
+                    done();
+                });
             });
         });
         it('should use a custom formatter', function (done) {
@@ -104,20 +124,6 @@ describe('PythonShell', function () {
             pyshell.send('hello').send('world').end(function (err) {
                 if (err) return done(err);
                 output.should.be.exactly('HELLO\nWORLD\n');
-                done();
-            });
-        });
-        it('should write as-is when mode is "binary"', function (done) {
-            var pyshell = new PythonShell('echo_binary.py', {
-                mode: 'binary'
-            });
-            var output = '';
-            pyshell.stdout.on('data', function (data) {
-                output += ''+data;
-            });
-            pyshell.send(new Buffer('i am not a string')).end(function (err) {
-                if (err) return done(err);
-                output.should.be.exactly('i am not a string');
                 done();
             });
         });
