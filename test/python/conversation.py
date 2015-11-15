@@ -65,5 +65,9 @@ for line in sys.stdin:
 	response = handleLine(line)
 
 	print json.dumps(response)
+	# print json.dumps({
+	# 	'action':'knockknockjoke',
+	# 	'message': "Who's there?"
+	# 	})
 	sys.stdout.flush()
-	time.sleep(1)
+	# time.sleep(1)

@@ -145,6 +145,8 @@ describe('PythonShell', function () {
                                 done(util.format("Unexpected action: '%s'", data.action))
                         }
                     });
+
+                pyshell.stdout.resume();
                 // }
 
                 // function awaitReply() {
@@ -163,6 +165,10 @@ describe('PythonShell', function () {
                 //     });
                 // }
 
+                pyshell.stderr.on('data', function(err) {
+                    console.error(err);
+                });
+
                 pyshell.on('close', function(err) {
                     if (err) {
                         return done(err);
@@ -175,8 +181,8 @@ describe('PythonShell', function () {
 
                 function flushStdIn() {
                     // pyshell.stdin.write(os.EOF);
-                    // pyshell.pauseInput();
-                    pyshell.flushInput();
+                    pyshell.pauseInput();
+                    // pyshell.flushInput();
                 }
 
                 function endAndAssert() {
