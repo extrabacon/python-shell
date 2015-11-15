@@ -11,8 +11,7 @@
   "dependencies": {},
   "devDependencies": {
     "should": "^6.0.0",
-    "mocha": "^2.2.5",
-    "lodash": "^3.10.1"
+    "mocha": "^2.2.5"
   },
   "repository": {
     "type": "git",
