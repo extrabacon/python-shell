@@ -94,6 +94,28 @@ describe('PythonShell', function () {
                     done();
                 });
             });
+            it.only('holds a conversation', function (done) {
+                var pyshell = new PythonShell('conversation.py', {
+                    mode: 'json'
+                });
+                var output = '';
+                pyshell.stdout.on('data', function (data) {
+                    output += ''+data;
+                });
+                pyshell
+                .send({ a: 'b' })
+                .send(null)
+                .send([1, 2, 3])
+                .end(function (err) {
+                    if (err) {
+                        return done(err);
+                    }
+                    outputs = output.split('\n');
+                    output[0].should.be.exactly();
+                    output.should.be.exactly('{"a": "b"}\nnull\n[1, 2, 3]\n');
+                    done();
+                });
+            });
         });
         context('binary mode', function() {
             it('should write as-is', function (done) {
