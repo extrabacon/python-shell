@@ -59,15 +59,13 @@ def handleLine(line):
 	return handleAction(parsed)
 
 # simple JSON echo script
-# while not ended:
-# 	line = sys.stdin.read()
-for line in sys.stdin:
+while not ended:
+	line = sys.stdin.readline()
+	if not line:
+		break
+# for line in sys.stdin:
+
 	response = handleLine(line)
 
 	print json.dumps(response)
-	# print json.dumps({
-	# 	'action':'knockknockjoke',
-	# 	'message': "Who's there?"
-	# 	})
 	sys.stdout.flush()
-	# time.sleep(1)

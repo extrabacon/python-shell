@@ -100,7 +100,7 @@ describe('PythonShell', function () {
                 var pyshell = new PythonShell('conversation.py', {
                     mode: 'json'
                 });
-                var output = '';
+                var outputs = [];
 
                 function makeKnockKnockMessage(message) {
                     return {
@@ -109,21 +109,31 @@ describe('PythonShell', function () {
                     };
                 }
 
+                var outgoingMessages = [
+                    "Knock, knock.",
+                    "Orange.",
+                    "Orange you glad I didn't say, 'banana'?"
+                ];
+
+                var incomingMessages = [
+                    "Who's there?",
+                    "Orange who?",
+                    "Ha ha."
+                ];
+
                 var makeKnockKnockReply = makeKnockKnockMessage;
 
                 function handleReply(reply) {
                     switch(reply.message) {
-                        case "Who's there?":
+                        case incomingMessages[0]:
                             // awaitReply();
-                            pyshell.send(makeKnockKnockMessage('Orange.'));
-                            flushStdIn();
+                            pyshell.send(makeKnockKnockMessage(outgoingMessages[1]));
                             break;
-                        case "Orange who?":
+                        case incomingMessages[1]:
                             // awaitReply();
-                            pyshell.send(makeKnockKnockMessage("Orange you glad I didn't say, 'banana'?"));
-                            flushStdIn();
+                            pyshell.send(makeKnockKnockMessage(outgoingMessages[2]));
                             break;
-                        case "Ha ha.":
+                        case incomingMessages[2]:
                             endAndAssert();
                             break;
                     }
@@ -132,10 +142,10 @@ describe('PythonShell', function () {
                 }
 
                 // function awaitReply() {
-                    pyshell.stdout.on('data', function (data) {
-                        output += ''+data;
-
+                    pyshell.on('message', function (data) {
                         console.log("Data to stdout: ", data);
+
+                        outputs.push(data);
 
                         switch(data.action) {
                             case 'knockknockjoke':
@@ -146,7 +156,7 @@ describe('PythonShell', function () {
                         }
                     });
 
-                pyshell.stdout.resume();
+                // pyshell.stdout.resume();
                 // }
 
                 // function awaitReply() {
@@ -165,9 +175,9 @@ describe('PythonShell', function () {
                 //     });
                 // }
 
-                pyshell.stderr.on('data', function(err) {
-                    console.error(err);
-                });
+                // pyshell.stderr.on('data', function(err) {
+                //     console.error(err);
+                // });
 
                 pyshell.on('close', function(err) {
                     if (err) {
@@ -176,44 +186,25 @@ describe('PythonShell', function () {
                     return done('Unexpectedly closed.');
                 });
                 // awaitReply();
-                pyshell.send(makeKnockKnockMessage('Knock, knock.'));
-                flushStdIn();
-
-                function flushStdIn() {
-                    // pyshell.stdin.write(os.EOF);
-                    pyshell.pauseInput();
-                    // pyshell.flushInput();
-                }
+                pyshell.send(makeKnockKnockMessage(outgoingMessages[0]));
 
                 function endAndAssert() {
                     pyshell.end(function (err) {
                         if (err) {
                             return done(err);
                         }
-                        var outputs = output.split("\n");
-
-                        var parsedOutputs = [];
-                        outputs
-                        .slice(0, 3)
-                        .forEach(function(outputRaw) {
-                            try {
-                                var parsed = JSON.parse(outputRaw);
-                                parsedOutputs.push(parsed);
-                            } catch(err) {
-                                done(err);
-                            }
-                        });
+                        console.log(outputs);
                         
-                        should(parsedOutputs[0])
-                        .eql(makeKnockKnockReply("Who's there?"),
+                        should(outputs[0])
+                        .eql(makeKnockKnockReply(incomingMessages[0]),
                             "Correct knock-knock reply received.");
 
-                        should(parsedOutputs[1])
-                        .eql(makeKnockKnockReply("Orange who?"),
+                        should(outputs[1])
+                        .eql(makeKnockKnockReply(incomingMessages[1]),
                             "Correct knock-knock reply received.");
 
-                        should(parsedOutputs[2])
-                        .eql(makeKnockKnockReply("Ha ha."),
+                        should(outputs[2])
+                        .eql(makeKnockKnockReply(incomingMessages[1]),
                             "Correct knock-knock reply received.");
 
                         done();

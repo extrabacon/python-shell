@@ -191,16 +191,6 @@ PythonShell.prototype.send = function (message) {
     return this;
 };
 
-PythonShell.prototype.pauseInput = function (message) {
-    this.stdin.pause();
-    return this;
-};
-
-PythonShell.prototype.flushInput = function (message) {
-    // this.stdin.write(os.EOL);
-    return this;
-};
-
 /**
  * Parses data received from the Python shell stdout stream and emits "message" events
  * This method is not used in binary mode
