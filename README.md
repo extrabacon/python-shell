@@ -16,6 +16,13 @@ A simple way to run Python scripts from Node.js with basic but efficient inter-p
 npm install python-shell
 ```
 
+## Testing
+
+`Mocha` testrunner is required:
+```bash
+npm install -g mocha
+```
+
 To run the tests:
 ```bash
 npm test
