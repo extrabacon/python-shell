@@ -18,17 +18,17 @@ def handleKnockKnock(obj):
 		'action': 'knockknockjoke'
 	};
 
-	phase = obj['phase'];
-	if (phase == 'Knock, knock.'):
-		response.message = "Who's there?"
+	message = obj['message'];
+	if (message == 'Knock, knock.'):
+		response['message'] = "Who's there?"
 		return response;
 
-	if (phase == 'Orange.'):
-		response.message = "Orange who?"
+	if (message == 'Orange.'):
+		response['message'] = "Orange who?"
 		return response;
 
-	if (phase == "Orange you glad I didn't say, 'banana'?"):
-		response.message = "Ha ha."
+	if (message == "Orange you glad I didn't say, 'banana'?"):
+		response['message'] = "Ha ha."
 		return response;
 
 	return makeError('Unrecognised knock-knock phase.')

@@ -1,5 +1,6 @@
 var should = require('should');
 var PythonShell = require('..');
+var util = require('util');
 
 describe('PythonShell', function () {
 
@@ -99,22 +100,89 @@ describe('PythonShell', function () {
                     mode: 'json'
                 });
                 var output = '';
-                pyshell.stdout.on('data', function (data) {
-                    output += ''+data;
+
+                function makeKnockKnockMessage(message) {
+                    return {
+                        action: 'knockknockjoke',
+                        message: message
+                    };
+                }
+
+                var makeKnockKnockReply = makeKnockKnockMessage;
+
+                function handleReply(reply) {
+                    switch(reply.message) {
+                        case "Who's there?":
+                            pyshell.send(makeKnockKnockMessage('Orange.'));
+                            break;
+                        case "Orange who?":
+                            pyshell.send(makeKnockKnockMessage("Orange you glad I didn't say, 'banana'?"));
+                            break;
+                        case "Ha ha.":
+                            endAndAssert();
+                            break;
+                    }
+                    
+                    endAndAssert();
+                }
+
+                pyshell.on('message', function (message) {
+                    output += ''+message;
+
+                    console.log("Data to stdout: ", message);
+
+                    switch(message.action) {
+                        case 'knockknockjoke':
+                            handleReply(message);
+                            break;
+                        default:
+                            done(util.format("Unexpected action: '%s'", data.action))
+                    }
                 });
-                pyshell
-                .send({ a: 'b' })
-                .send(null)
-                .send([1, 2, 3])
-                .end(function (err) {
+
+                pyshell.on('close', function(err) {
                     if (err) {
                         return done(err);
                     }
-                    outputs = output.split('\n');
-                    output[0].should.be.exactly();
-                    output.should.be.exactly('{"a": "b"}\nnull\n[1, 2, 3]\n');
-                    done();
+                    return done('Unexpectedly closed.');
                 });
+                pyshell.send(makeKnockKnockMessage('Knock, knock.'));
+                // endAndAssert();
+
+                function endAndAssert() {
+                    pyshell.end(function (err) {
+                        if (err) {
+                            return done(err);
+                        }
+                        var outputs = output.split("\n");
+
+                        var parsedOutputs = [];
+                        outputs
+                        .slice(0, 3)
+                        .forEach(function(outputRaw) {
+                            try {
+                                var parsed = JSON.parse(outputRaw);
+                                parsedOutputs.push(parsed);
+                            } catch(err) {
+                                done(err);
+                            }
+                        });
+                        
+                        should(parsedOutputs[0])
+                        .eql(makeKnockKnockReply("Who's there?"),
+                            "Correct knock-knock reply received.");
+
+                        should(parsedOutputs[1])
+                        .eql(makeKnockKnockReply("Orange who?"),
+                            "Correct knock-knock reply received.");
+
+                        should(parsedOutputs[2])
+                        .eql(makeKnockKnockReply("Ha ha."),
+                            "Correct knock-knock reply received.");
+
+                        done();
+                    });
+                }
             });
         });
         context('binary mode', function() {
