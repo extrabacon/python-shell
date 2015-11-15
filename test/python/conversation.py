@@ -1,4 +1,6 @@
-import sys, json
+import sys, json, time
+
+ended = False
 
 def is_json(myjson):
     try:
@@ -8,6 +10,7 @@ def is_json(myjson):
     return True
 
 def makeError(reason):
+	ended = True
 	return {
 		'action': 'error',
 		'reason': reason
@@ -29,6 +32,7 @@ def handleKnockKnock(obj):
 
 	if (message == "Orange you glad I didn't say, 'banana'?"):
 		response['message'] = "Ha ha."
+		ended = True
 		return response;
 
 	return makeError('Unrecognised knock-knock phase.')
@@ -55,7 +59,11 @@ def handleLine(line):
 	return handleAction(parsed)
 
 # simple JSON echo script
+# while not ended:
+# 	line = sys.stdin.read()
 for line in sys.stdin:
 	response = handleLine(line)
 
 	print json.dumps(response)
+	sys.stdout.flush()
+	time.sleep(1)

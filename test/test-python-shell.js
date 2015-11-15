@@ -1,6 +1,7 @@
 var should = require('should');
 var PythonShell = require('..');
 var util = require('util');
+var os = require("os");
 
 describe('PythonShell', function () {
 
@@ -113,10 +114,14 @@ describe('PythonShell', function () {
                 function handleReply(reply) {
                     switch(reply.message) {
                         case "Who's there?":
+                            // awaitReply();
                             pyshell.send(makeKnockKnockMessage('Orange.'));
+                            flushStdIn();
                             break;
                         case "Orange who?":
+                            // awaitReply();
                             pyshell.send(makeKnockKnockMessage("Orange you glad I didn't say, 'banana'?"));
+                            flushStdIn();
                             break;
                         case "Ha ha.":
                             endAndAssert();
@@ -126,19 +131,37 @@ describe('PythonShell', function () {
                     endAndAssert();
                 }
 
-                pyshell.on('message', function (message) {
-                    output += ''+message;
+                // function awaitReply() {
+                    pyshell.stdout.on('data', function (data) {
+                        output += ''+data;
 
-                    console.log("Data to stdout: ", message);
+                        console.log("Data to stdout: ", data);
 
-                    switch(message.action) {
-                        case 'knockknockjoke':
-                            handleReply(message);
-                            break;
-                        default:
-                            done(util.format("Unexpected action: '%s'", data.action))
-                    }
-                });
+                        switch(data.action) {
+                            case 'knockknockjoke':
+                                handleReply(data);
+                                break;
+                            default:
+                                done(util.format("Unexpected action: '%s'", data.action))
+                        }
+                    });
+                // }
+
+                // function awaitReply() {
+                //     pyshell.stdout.once('data', function (data) {
+                //         output += ''+data;
+
+                //         console.log("Data to stdout: ", data);
+
+                //         switch(data.action) {
+                //             case 'knockknockjoke':
+                //                 handleReply(data);
+                //                 break;
+                //             default:
+                //                 done(util.format("Unexpected action: '%s'", data.action))
+                //         }
+                //     });
+                // }
 
                 pyshell.on('close', function(err) {
                     if (err) {
@@ -146,8 +169,15 @@ describe('PythonShell', function () {
                     }
                     return done('Unexpectedly closed.');
                 });
+                // awaitReply();
                 pyshell.send(makeKnockKnockMessage('Knock, knock.'));
-                // endAndAssert();
+                flushStdIn();
+
+                function flushStdIn() {
+                    // pyshell.stdin.write(os.EOF);
+                    // pyshell.pauseInput();
+                    pyshell.flushInput();
+                }
 
                 function endAndAssert() {
                     pyshell.end(function (err) {
