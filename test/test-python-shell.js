@@ -100,7 +100,7 @@ describe('PythonShell', function () {
                 var pyshell = new PythonShell('conversation.py', {
                     mode: 'json'
                 });
-                var outputs = [];
+                var receivedMessages = [];
 
                 function makeKnockKnockMessage(message) {
                     return {
@@ -126,66 +126,29 @@ describe('PythonShell', function () {
                 function handleReply(reply) {
                     switch(reply.message) {
                         case incomingMessages[0]:
-                            // awaitReply();
                             pyshell.send(makeKnockKnockMessage(outgoingMessages[1]));
                             break;
                         case incomingMessages[1]:
-                            // awaitReply();
                             pyshell.send(makeKnockKnockMessage(outgoingMessages[2]));
                             break;
                         case incomingMessages[2]:
                             endAndAssert();
                             break;
                     }
-                    
-                    endAndAssert();
                 }
 
-                // function awaitReply() {
-                    pyshell.on('message', function (data) {
-                        console.log("Data to stdout: ", data);
+                pyshell.on('message', function (message) {
+                    receivedMessages.push(message);
 
-                        outputs.push(data);
-
-                        switch(data.action) {
-                            case 'knockknockjoke':
-                                handleReply(data);
-                                break;
-                            default:
-                                done(util.format("Unexpected action: '%s'", data.action))
-                        }
-                    });
-
-                // pyshell.stdout.resume();
-                // }
-
-                // function awaitReply() {
-                //     pyshell.stdout.once('data', function (data) {
-                //         output += ''+data;
-
-                //         console.log("Data to stdout: ", data);
-
-                //         switch(data.action) {
-                //             case 'knockknockjoke':
-                //                 handleReply(data);
-                //                 break;
-                //             default:
-                //                 done(util.format("Unexpected action: '%s'", data.action))
-                //         }
-                //     });
-                // }
-
-                // pyshell.stderr.on('data', function(err) {
-                //     console.error(err);
-                // });
-
-                pyshell.on('close', function(err) {
-                    if (err) {
-                        return done(err);
+                    switch(message.action) {
+                        case 'knockknockjoke':
+                            handleReply(message);
+                            break;
+                        default:
+                            done(util.format("Unexpected action: '%s'", data.action))
                     }
-                    return done('Unexpectedly closed.');
                 });
-                // awaitReply();
+
                 pyshell.send(makeKnockKnockMessage(outgoingMessages[0]));
 
                 function endAndAssert() {
@@ -193,18 +156,18 @@ describe('PythonShell', function () {
                         if (err) {
                             return done(err);
                         }
-                        console.log(outputs);
+                        console.log(receivedMessages);
                         
-                        should(outputs[0])
+                        should(receivedMessages[0])
                         .eql(makeKnockKnockReply(incomingMessages[0]),
                             "Correct knock-knock reply received.");
 
-                        should(outputs[1])
+                        should(receivedMessages[1])
                         .eql(makeKnockKnockReply(incomingMessages[1]),
                             "Correct knock-knock reply received.");
 
-                        should(outputs[2])
-                        .eql(makeKnockKnockReply(incomingMessages[1]),
+                        should(receivedMessages[2])
+                        .eql(makeKnockKnockReply(incomingMessages[2]),
                             "Correct knock-knock reply received.");
 
                         done();
