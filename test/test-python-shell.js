@@ -156,7 +156,6 @@ describe('PythonShell', function () {
                         if (err) {
                             return done(err);
                         }
-                        console.log(receivedMessages);
                         
                         should(receivedMessages[0])
                         .eql(makeKnockKnockReply(incomingMessages[0]),
