@@ -1,4 +1,5 @@
 var should = require('should');
+var _ = require('lodash');
 var PythonShell = require('..');
 
 describe('PythonShell', function () {
