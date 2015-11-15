@@ -1,7 +1,6 @@
 var EventEmitter = require('events').EventEmitter;
 var path = require('path');
 var util = require('util');
-var os = require('os');
 var spawn = require('child_process').spawn;
 
 function toArray(source) {
@@ -186,7 +185,6 @@ PythonShell.prototype.parseError = function (data) {
 PythonShell.prototype.send = function (message) {
     var data = this.formatter ? this.formatter(message) : message;
     if (this.mode !== 'binary') data += '\n';
-    console.log('writing to stdin: ', data);
     this.stdin.write(data);
     return this;
 };
@@ -198,8 +196,6 @@ PythonShell.prototype.send = function (message) {
  * @param {string|Buffer} data The data to parse into messages
  */
 PythonShell.prototype.receive = function (data) {
-    console.log('received: ',data)
-
     var self = this;
     var parts = (''+data).split(/\n/g);
 
