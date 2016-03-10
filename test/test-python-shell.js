@@ -60,6 +60,52 @@ describe('PythonShell', function () {
                 done();
             });
         });
+        it('should run multiple scripts and fail with an extended stack trace for each of them', function (done) {
+            var numberOfTimesToRun = 20;
+            for (var i = 0; i < numberOfTimesToRun; i++) {
+                runSingleErrorScript(end);
+            }
+            var count = 0;
+            function end() {
+                count++;
+                if (count === numberOfTimesToRun) {
+                  done();
+                }
+            }
+            function runSingleErrorScript(callback) {
+                PythonShell.run('error.py', function (err, results) {
+                    err.should.be.an.Error;
+                    err.exitCode.should.be.exactly(1);
+                    err.stack.should.containEql('----- Python Traceback -----');
+                    callback();
+                });
+            }
+        });
+
+        it('should run multiple scripts and return output data for each of them', function (done) {
+            var numberOfTimesToRun = 20;
+            for (var i = 0; i < numberOfTimesToRun; i++) {
+                runSingleScript(end);
+            }
+            var count = 0;
+            function end() {
+                count++;
+                if (count === numberOfTimesToRun) {
+                  done();
+                }
+            }
+            function runSingleScript(callback) {
+                PythonShell.run('echo_args.py', {
+                    args: ['hello', 'world']
+                }, function (err, results) {
+                    if (err) return done(err);
+                    results.should.be.an.Array.and.have.lengthOf(2);
+                    results.should.eql(['hello', 'world']);
+                    callback();
+                });
+            }
+
+        });
     });
 
     describe('.send(message)', function () {
