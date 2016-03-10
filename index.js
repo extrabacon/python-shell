@@ -73,31 +73,48 @@ var PythonShell = function (script, options) {
         errorData += ''+data;
     });
 
+    this.stderr.on('end', function(){
+        self.stderrHasEnded = true
+        terminateIfNeeded();
+    })
+
+    this.stdout.on('end', function(){
+        self.stdoutHasEnded = true
+        terminateIfNeeded();
+    })
+
     this.childProcess.on('exit', function (code) {
+        self.exitCode = code;
+        terminateIfNeeded();
+    });
+
+    function terminateIfNeeded() {
+        if (!self.stderrHasEnded || !self.stdoutHasEnded || self.exitCode == null) {
+            return;
+        }
         var err;
-        if (errorData || code !== 0) {
+        if (errorData || self.exitCode !== 0) {
             if (errorData) {
                 err = self.parseError(errorData);
             } else {
-                err = new Error('process exited with code ' + code);
+                err = new Error('process exited with code ' + self.exitCode);
             }
             err = extend(err, {
                 executable: pythonPath,
                 options: pythonOptions.length ? pythonOptions : null,
                 script: self.script,
                 args: scriptArgs.length ? scriptArgs : null,
-                exitCode: code
+                exitCode: self.exitCode
             });
             // do not emit error if only a callback is used
             if (self.listeners('error').length || !self._endCallback) {
                 self.emit('error', err);
             }
         }
-        self.exitCode = code;
         self.terminated = true;
         self.emit('close');
         self._endCallback && self._endCallback(err);
-    });
+    }
 };
 util.inherits(PythonShell, EventEmitter);
 
