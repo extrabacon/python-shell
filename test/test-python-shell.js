@@ -85,7 +85,7 @@ describe('PythonShell', function () {
         it('should run multiple scripts and return output data for each of them', function (done) {
             var numberOfTimesToRun = 20;
             for (var i = 0; i < numberOfTimesToRun; i++) {
-                runSingleErrorScript(end);
+                runSingleScript(end);
             }
             var count = 0;
             function end() {
@@ -94,7 +94,7 @@ describe('PythonShell', function () {
                   done();
                 }
             }
-            function runSingleErrorScript(callback) {
+            function runSingleScript(callback) {
                 PythonShell.run('echo_args.py', {
                     args: ['hello', 'world']
                 }, function (err, results) {
