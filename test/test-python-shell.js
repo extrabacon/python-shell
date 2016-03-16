@@ -1,5 +1,7 @@
 var should = require('should');
 var PythonShell = require('..');
+var util = require('util');
+var os = require("os");
 
 describe('PythonShell', function () {
 
@@ -109,32 +111,129 @@ describe('PythonShell', function () {
     });
 
     describe('.send(message)', function () {
-        it('should send string messages when mode is "text"', function (done) {
-            var pyshell = new PythonShell('echo_text.py', {
-                mode: 'text'
+        context('text mode', function() {
+            it('should send string messages', function (done) {
+                var pyshell = new PythonShell('echo_text.py', {
+                    mode: 'text'
+                });
+                var output = '';
+                pyshell.stdout.on('data', function (data) {
+                    output += ''+data;
+                });
+                pyshell.send('hello').send('world').end(function (err) {
+                    if (err) return done(err);
+                    output.should.be.exactly('hello\nworld\n');
+                    done();
+                });
+            });  
+        })
+        context('JSON mode', function() {
+            it('should send JSON messages', function (done) {
+                var pyshell = new PythonShell('echo_json.py', {
+                    mode: 'json'
+                });
+                var output = '';
+                pyshell.stdout.on('data', function (data) {
+                    output += ''+data;
+                });
+                pyshell.send({ a: 'b' }).send(null).send([1, 2, 3]).end(function (err) {
+                    if (err) return done(err);
+                    output.should.be.exactly('{"a": "b"}\nnull\n[1, 2, 3]\n');
+                    done();
+                });
             });
-            var output = '';
-            pyshell.stdout.on('data', function (data) {
-                output += ''+data;
-            });
-            pyshell.send('hello').send('world').end(function (err) {
-                if (err) return done(err);
-                output.should.be.exactly('hello\nworld\n');
-                done();
+            it('holds a conversation', function (done) {
+                var pyshell = new PythonShell('conversation.py', {
+                    mode: 'json'
+                });
+                var receivedMessages = [];
+
+                function makeKnockKnockMessage(message) {
+                    return {
+                        action: 'knockknockjoke',
+                        message: message
+                    };
+                }
+
+                var outgoingMessages = [
+                    "Knock, knock.",
+                    "Orange.",
+                    "Orange you glad I didn't say, 'banana'?"
+                ];
+
+                var incomingMessages = [
+                    "Who's there?",
+                    "Orange who?",
+                    "Ha ha."
+                ];
+
+                var makeKnockKnockReply = makeKnockKnockMessage;
+
+                function handleReply(reply) {
+                    switch(reply.message) {
+                        case incomingMessages[0]:
+                            pyshell.send(makeKnockKnockMessage(outgoingMessages[1]));
+                            break;
+                        case incomingMessages[1]:
+                            pyshell.send(makeKnockKnockMessage(outgoingMessages[2]));
+                            break;
+                        case incomingMessages[2]:
+                            endAndAssert();
+                            break;
+                    }
+                }
+
+                pyshell.on('message', function (message) {
+                    receivedMessages.push(message);
+
+                    switch(message.action) {
+                        case 'knockknockjoke':
+                            handleReply(message);
+                            break;
+                        default:
+                            done(util.format("Unexpected action: '%s'", data.action))
+                    }
+                });
+
+                pyshell.send(makeKnockKnockMessage(outgoingMessages[0]));
+
+                function endAndAssert() {
+                    pyshell.end(function (err) {
+                        if (err) {
+                            return done(err);
+                        }
+                        
+                        should(receivedMessages[0])
+                        .eql(makeKnockKnockReply(incomingMessages[0]),
+                            "Correct knock-knock reply received.");
+
+                        should(receivedMessages[1])
+                        .eql(makeKnockKnockReply(incomingMessages[1]),
+                            "Correct knock-knock reply received.");
+
+                        should(receivedMessages[2])
+                        .eql(makeKnockKnockReply(incomingMessages[2]),
+                            "Correct knock-knock reply received.");
+
+                        done();
+                    });
+                }
             });
         });
-        it('should send JSON messages when mode is "json"', function (done) {
-            var pyshell = new PythonShell('echo_json.py', {
-                mode: 'json'
-            });
-            var output = '';
-            pyshell.stdout.on('data', function (data) {
-                output += ''+data;
-            });
-            pyshell.send({ a: 'b' }).send(null).send([1, 2, 3]).end(function (err) {
-                if (err) return done(err);
-                output.should.be.exactly('{"a": "b"}\nnull\n[1, 2, 3]\n');
-                done();
+        context('binary mode', function() {
+            it('should write as-is', function (done) {
+                var pyshell = new PythonShell('echo_binary.py', {
+                    mode: 'binary'
+                });
+                var output = '';
+                pyshell.stdout.on('data', function (data) {
+                    output += ''+data;
+                });
+                pyshell.send(new Buffer('i am not a string')).end(function (err) {
+                    if (err) return done(err);
+                    output.should.be.exactly('i am not a string');
+                    done();
+                });
             });
         });
         it('should use a custom formatter', function (done) {
@@ -150,20 +249,6 @@ describe('PythonShell', function () {
             pyshell.send('hello').send('world').end(function (err) {
                 if (err) return done(err);
                 output.should.be.exactly('HELLO\nWORLD\n');
-                done();
-            });
-        });
-        it('should write as-is when mode is "binary"', function (done) {
-            var pyshell = new PythonShell('echo_binary.py', {
-                mode: 'binary'
-            });
-            var output = '';
-            pyshell.stdout.on('data', function (data) {
-                output += ''+data;
-            });
-            pyshell.send(new Buffer('i am not a string')).end(function (err) {
-                if (err) return done(err);
-                output.should.be.exactly('i am not a string');
                 done();
             });
         });
