@@ -94,23 +94,24 @@ var PythonShell = function (script, options) {
         }
         var err;
         // if (errorData || self.exitCode !== 0) {
-        //     if (errorData) {
-        //         err = self.parseError(errorData);
-        //     } else {
-        //         err = new Error('process exited with code ' + self.exitCode);
-        //     }
-        //     err = extend(err, {
-        //         executable: pythonPath,
-        //         options: pythonOptions.length ? pythonOptions : null,
-        //         script: self.script,
-        //         args: scriptArgs.length ? scriptArgs : null,
-        //         exitCode: self.exitCode
-        //     });
-        //     // do not emit error if only a callback is used
-        //     if (self.listeners('error').length || !self._endCallback) {
-        //         self.emit('error', err);
-        //     }
-        // }
+        if (self.exitCode !== 0) {
+            if (errorData) {
+                err = self.parseError(errorData);
+            } else {
+                err = new Error('process exited with code ' + self.exitCode);
+            }
+            err = extend(err, {
+                executable: pythonPath,
+                options: pythonOptions.length ? pythonOptions : null,
+                script: self.script,
+                args: scriptArgs.length ? scriptArgs : null,
+                exitCode: self.exitCode
+            });
+            // do not emit error if only a callback is used
+            if (self.listeners('error').length || !self._endCallback) {
+                self.emit('error', err);
+            }
+        }
         self.terminated = true;
         self.emit('close');
         self._endCallback && self._endCallback(err);
