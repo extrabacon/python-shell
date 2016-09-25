@@ -93,7 +93,8 @@ var PythonShell = function (script, options) {
             return;
         }
         var err;
-        if (errorData || self.exitCode !== 0) {
+        // if (errorData || self.exitCode !== 0) {
+        if (self.exitCode !== 0) {
             if (errorData) {
                 err = self.parseError(errorData);
             } else {
