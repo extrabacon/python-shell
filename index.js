@@ -242,6 +242,7 @@ PythonShell.prototype.receive = function (data) {
 PythonShell.prototype.end = function (callback) {
     this.childProcess.stdin.end();
     this._endCallback = callback;
+    this.childProcess.kill();
     return this;
 };
 
