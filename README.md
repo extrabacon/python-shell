@@ -141,7 +141,7 @@ Creates an instance of `PythonShell` and starts the Python process
   * `encoding`: the text encoding to apply on the child process streams (default: "utf8")
   * `pythonPath`: The path where to locate the "python" executable. Default: "python"
   * `pythonOptions`: Array of option switches to pass to "python"
-  * `scriptPath`: The default path where to look for scripts. Default is the current working directory.
+  * `scriptPath`: The default path where to look for scripts. Default is the current working directory. And if you set the scriptPath, the python working directory will be set to this path.
   * `args`: Array of arguments to pass to the script
 
 Other options are forwarded to `child_process.spawn`.
