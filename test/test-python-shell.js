@@ -287,4 +287,23 @@ describe('PythonShell', function () {
             });
         });
     });
+
+    describe('.terminate()', function () {
+        it('set terminated to true', function (done) {
+            var pyshell = new PythonShell('infinite_loop.py');
+            pyshell.terminate();
+            pyshell.terminated.should.be.true;
+            done();
+        });
+        it('run the end callback if specified', function (done) {
+            var pyshell = new PythonShell('infinite_loop.py');
+            var endCalled = false;
+            pyshell.end(()=>{
+                endCalled = true;
+            })
+            pyshell.terminate();
+            endCalled.should.be.true;
+            done();
+        });
+    });
 });

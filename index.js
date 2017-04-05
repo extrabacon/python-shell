@@ -245,4 +245,15 @@ PythonShell.prototype.end = function (callback) {
     return this;
 };
 
+/**
+ * Closes the stdin stream, which should cause the process to finish its work and close
+ * @returns {PythonShell} The same instance for chaining calls
+ */
+PythonShell.prototype.terminate = function () {
+    this.childProcess.kill();
+    this.terminated = true;
+    this._endCallback && this._endCallback();
+    return this;
+};
+
 module.exports = PythonShell;
