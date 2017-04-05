@@ -209,6 +209,10 @@ Parses incoming data from the Python script written via stdout and emits `messag
 
 Closes the stdin stream, allowing the Python script to finish and exit. The optional callback is invoked when the process is terminated.
 
+#### `.terminate()`
+
+Terminates the python script, the optional end callback is invoked if specified.
+
 #### event: `message`
 
 Fires when a chunk of data is parsed from the stdout stream via the `receive` method. If a `parser` method is specified, the result of this function will be the message value. This event is not emitted in binary mode.
