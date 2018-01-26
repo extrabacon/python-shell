@@ -73,48 +73,31 @@ var PythonShell = function (script, options) {
         errorData += ''+data;
     });
 
-    this.stderr.on('end', function(){
-        self.stderrHasEnded = true
-        terminateIfNeeded();
-    })
-
-    this.stdout.on('end', function(){
-        self.stdoutHasEnded = true
-        terminateIfNeeded();
-    })
-
-    this.childProcess.on('exit', function (code) {
-        self.exitCode = code;
-        terminateIfNeeded();
-    });
-
-    function terminateIfNeeded() {
-        if (!self.stderrHasEnded || !self.stdoutHasEnded || self.exitCode == null) {
-            return;
-        }
+    this.childProcess.on('exit', function (code, signal) {
         var err;
-        if (errorData || self.exitCode !== 0) {
+        if (errorData || (code && code !== 0)) {
             if (errorData) {
                 err = self.parseError(errorData);
             } else {
-                err = new Error('process exited with code ' + self.exitCode);
+                err = new Error('process exited with code ' + code);
             }
             err = extend(err, {
                 executable: pythonPath,
                 options: pythonOptions.length ? pythonOptions : null,
                 script: self.script,
                 args: scriptArgs.length ? scriptArgs : null,
-                exitCode: self.exitCode
+                exitCode: code
             });
             // do not emit error if only a callback is used
             if (self.listeners('error').length || !self._endCallback) {
                 self.emit('error', err);
             }
         }
+
         self.terminated = true;
         self.emit('close');
-        self._endCallback && self._endCallback(err);
-    }
+        self._endCallback && self._endCallback(err,self.exitCode,signal);
+    });
 };
 util.inherits(PythonShell, EventEmitter);
 
@@ -249,10 +232,9 @@ PythonShell.prototype.end = function (callback) {
  * Closes the stdin stream, which should cause the process to finish its work and close
  * @returns {PythonShell} The same instance for chaining calls
  */
-PythonShell.prototype.terminate = function () {
-    this.childProcess.kill();
+PythonShell.prototype.terminate = function (signal) {
+    this.childProcess.kill(signal);
     this.terminated = true;
-    this._endCallback && this._endCallback();
     return this;
 };
 
