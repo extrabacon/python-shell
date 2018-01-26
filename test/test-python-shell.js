@@ -238,9 +238,9 @@ describe('PythonShell', function () {
     describe('.end(callback)', function () {
         it('should end normally when exit code is zero', function (done) {
             var pyshell = new PythonShell('exit-code.py');
-            pyshell.end(function (err) {
+            pyshell.end(function (err,code,signal) {
                 if (err) return done(err);
-                pyshell.exitCode.should.be.exactly(0);
+                code.should.be.exactly(0);
                 done();
             });
         });
@@ -292,7 +292,7 @@ describe('PythonShell', function () {
         it('set terminated to true', function (done) {
             var pyshell = new PythonShell('infinite_loop.py');
             pyshell.terminate();
-            pyshell.terminated.should.be.true;
+            pyshell.terminated.should.be.true
             done();
         });
         it('run the end callback if specified', function (done) {
@@ -302,7 +302,18 @@ describe('PythonShell', function () {
                 endCalled = true;
             })
             pyshell.terminate();
-            endCalled.should.be.true;
+            pyshell.terminated.should.be.true
+            done();
+        });
+        it('terminate with correct kill signal', function (done) {
+            var pyshell = new PythonShell('infinite_loop.py');
+            var endCalled = false;
+            pyshell.end(()=>{
+                endCalled = true;
+            })
+            pyshell.terminate('SIGKILL');
+            pyshell.terminated.should.be.true;
+            setTimeout(()=>{pyshell.exitSignal.should.be.exactly('SIGKILL');},500);
             done();
         });
     });

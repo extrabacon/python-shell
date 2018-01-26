@@ -73,20 +73,38 @@ var PythonShell = function (script, options) {
         errorData += ''+data;
     });
 
-    this.childProcess.on('exit', function (code, signal) {
+    this.stderr.on('end', function(){
+        self.stderrHasEnded = true
+        terminateIfNeeded();
+    })
+
+    this.stdout.on('end', function(){
+        self.stdoutHasEnded = true
+        terminateIfNeeded();
+    })
+
+    this.childProcess.on('exit', function (code,signal) {
+        self.exitCode = code;
+        self.exitSignal = signal;
+        terminateIfNeeded();
+    });
+
+    function terminateIfNeeded() {
+        if(!self.stderrHasEnded || !self.stdoutHasEnded || (self.exitCode == null && self.exitSignal == null)) return;
+
         var err;
-        if (errorData || (code && code !== 0)) {
+        if (errorData || (self.exitCode && self.exitCode !== 0)) {
             if (errorData) {
                 err = self.parseError(errorData);
             } else {
-                err = new Error('process exited with code ' + code);
+                err = new Error('process exited with code ' + self.exitCode);
             }
             err = extend(err, {
                 executable: pythonPath,
                 options: pythonOptions.length ? pythonOptions : null,
                 script: self.script,
                 args: scriptArgs.length ? scriptArgs : null,
-                exitCode: code
+                exitCode: self.exitCode
             });
             // do not emit error if only a callback is used
             if (self.listeners('error').length || !self._endCallback) {
@@ -96,8 +114,8 @@ var PythonShell = function (script, options) {
 
         self.terminated = true;
         self.emit('close');
-        self._endCallback && self._endCallback(err,self.exitCode,signal);
-    });
+        self._endCallback && self._endCallback(err,self.exitCode,self.exitSignal);
+    };
 };
 util.inherits(PythonShell, EventEmitter);
 
