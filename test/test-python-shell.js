@@ -42,7 +42,7 @@ describe('PythonShell', function () {
                 args: ['hello', 'world']
             }, function (err, results) {
                 if (err) return done(err);
-                results.should.be.an.Array.and.have.lengthOf(2);
+                results.should.be.an.Array().and.have.lengthOf(2);
                 results.should.eql(['hello', 'world']);
                 done();
             });
@@ -101,7 +101,7 @@ describe('PythonShell', function () {
                     args: ['hello', 'world']
                 }, function (err, results) {
                     if (err) return done(err);
-                    results.should.be.an.Array.and.have.lengthOf(2);
+                    results.should.be.an.Array().and.have.lengthOf(2);
                     results.should.eql(['hello', 'world']);
                     callback();
                 });
