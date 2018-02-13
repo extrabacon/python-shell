@@ -1,5 +1,7 @@
 var should = require('should');
 var PythonShell = require('..');
+var path = require('path')
+const newline = require('os').EOL
 
 describe('PythonShell', function () {
 
@@ -10,7 +12,7 @@ describe('PythonShell', function () {
     describe('#ctor(script, options)', function () {
         it('should spawn a Python process', function (done) {
             var pyshell = new PythonShell('exit-code.py');
-            pyshell.command.should.eql(['test/python/exit-code.py']);
+            pyshell.command.should.eql(['test' + path.sep + 'python' + path.sep + 'exit-code.py']);
             pyshell.terminated.should.be.false;
             pyshell.end(function (err) {
                 if (err) return done(err);
@@ -22,14 +24,14 @@ describe('PythonShell', function () {
             var pyshell = new PythonShell('exit-code.py', {
                 pythonOptions: '-u'
             });
-            pyshell.command.should.eql(['-u', 'test/python/exit-code.py']);
+            pyshell.command.should.eql(['-u', 'test' + path.sep + 'python' + path.sep + 'exit-code.py']);
             pyshell.end(done);
         });
         it('should spawn a Python process with script arguments', function (done) {
             var pyshell = new PythonShell('echo_args.py', {
                 args: ['hello', 'world']
             });
-            pyshell.command.should.eql(['test/python/echo_args.py', 'hello', 'world']);
+            pyshell.command.should.eql(['test' + path.sep + 'python' + path.sep + 'echo_args.py', 'hello', 'world']);
             pyshell.end(done);
         });
     });
@@ -119,7 +121,7 @@ describe('PythonShell', function () {
             });
             pyshell.send('hello').send('world').end(function (err) {
                 if (err) return done(err);
-                output.should.be.exactly('hello\nworld\n');
+                output.should.be.exactly('hello'+newline+'world'+newline);
                 done();
             });
         });
@@ -133,7 +135,7 @@ describe('PythonShell', function () {
             });
             pyshell.send({ a: 'b' }).send(null).send([1, 2, 3]).end(function (err) {
                 if (err) return done(err);
-                output.should.be.exactly('{"a": "b"}\nnull\n[1, 2, 3]\n');
+                output.should.be.exactly('{"a": "b"}'+newline+'null'+newline+'[1, 2, 3]'+newline);
                 done();
             });
         });
@@ -149,7 +151,7 @@ describe('PythonShell', function () {
             });
             pyshell.send('hello').send('world').end(function (err) {
                 if (err) return done(err);
-                output.should.be.exactly('HELLO\nWORLD\n');
+                output.should.be.exactly('HELLO'+newline+'WORLD'+newline+'');
                 done();
             });
         });
@@ -205,7 +207,7 @@ describe('PythonShell', function () {
             pyshell.on('message', function (message) {
                 message.should.be.an.Object;
                 message.should.eql({ a: true });
-            }).receive('{"a"').receive(':').receive('true}\n').end(done);
+            }).receive('{"a"').receive(':').receive('true}'+newline+'').end(done);
         });
         it('should not be invoked when mode is "binary"', function (done) {
             var pyshell = new PythonShell('echo_args.py', {
@@ -281,8 +283,8 @@ describe('PythonShell', function () {
             var pyshell = new PythonShell('error.py');
             pyshell.on('error', function (err) {
                 err.stack.should.containEql('----- Python Traceback -----');
-                err.stack.should.containEql('File "test/python/error.py", line 6');
-                err.stack.should.containEql('File "test/python/error.py", line 4');
+                err.stack.should.containEql('File "test' + path.sep + 'python' + path.sep + 'error.py", line 4');
+                err.stack.should.containEql('File "test' + path.sep + 'python' + path.sep + 'error.py", line 6');
                 done();
             });
         });
