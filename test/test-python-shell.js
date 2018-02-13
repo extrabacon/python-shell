@@ -261,7 +261,7 @@ describe('PythonShell', function () {
         it('should emit error when data is written to stderr', function (done) {
             var pyshell = new PythonShell('error.py');
             pyshell.on('error', function (err) {
-                err.message.should.be.exactly('ZeroDivisionError: integer division or modulo by zero');
+                err.message.should.be.equalOneOf('ZeroDivisionError: integer division or modulo by zero','ZeroDivisionError: division by zero');
                 err.should.have.property('traceback');
                 err.traceback.should.containEql('Traceback (most recent call last)');
                 done();
