@@ -83,17 +83,17 @@ var PythonShell = function (script, options) {
         terminateIfNeeded();
     })
 
-    this.childProcess.on('exit', function (code) {
+    this.childProcess.on('exit', function (code,signal) {
         self.exitCode = code;
+        self.exitSignal = signal;
         terminateIfNeeded();
     });
 
     function terminateIfNeeded() {
-        if (!self.stderrHasEnded || !self.stdoutHasEnded || self.exitCode == null) {
-            return;
-        }
+        if(!self.stderrHasEnded || !self.stdoutHasEnded || (self.exitCode == null && self.exitSignal == null)) return;
+
         var err;
-        if (errorData || self.exitCode !== 0) {
+        if (errorData || (self.exitCode && self.exitCode !== 0)) {
             if (errorData) {
                 err = self.parseError(errorData);
             } else {
@@ -111,10 +111,11 @@ var PythonShell = function (script, options) {
                 self.emit('error', err);
             }
         }
+
         self.terminated = true;
         self.emit('close');
-        self._endCallback && self._endCallback(err);
-    }
+        self._endCallback && self._endCallback(err,self.exitCode,self.exitSignal);
+    };
 };
 util.inherits(PythonShell, EventEmitter);
 
@@ -242,6 +243,16 @@ PythonShell.prototype.receive = function (data) {
 PythonShell.prototype.end = function (callback) {
     this.childProcess.stdin.end();
     this._endCallback = callback;
+    return this;
+};
+
+/**
+ * Closes the stdin stream, which should cause the process to finish its work and close
+ * @returns {PythonShell} The same instance for chaining calls
+ */
+PythonShell.prototype.terminate = function (signal) {
+    this.childProcess.kill(signal);
+    this.terminated = true;
     return this;
 };
 

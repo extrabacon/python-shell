@@ -71,8 +71,11 @@ pyshell.on('message', function (message) {
 });
 
 // end the input stream and allow the process to exit
-pyshell.end(function (err) {
+pyshell.end(function (err,code,signal) {
   if (err) throw err;
+  console.log('The exit code was: ' + code);
+  console.log('The exit signal was: ' + signal);
+  console.log('finished');
   console.log('finished');
 });
 ```
@@ -208,6 +211,10 @@ Parses incoming data from the Python script written via stdout and emits `messag
 #### `.end(callback)`
 
 Closes the stdin stream, allowing the Python script to finish and exit. The optional callback is invoked when the process is terminated.
+
+#### `.terminate(signal)`
+
+Terminates the python script, the optional end callback is invoked if specified. A kill signal may be provided by `signal`, if `signal` is not specified SIGTERM is sent.
 
 #### event: `message`
 
