@@ -1,0 +1,24 @@
+# this script based off of https://github.com/tolbertam/mocha-appveyor-reporter/blob/master/appveyor.yml
+
+install:
+  # Get the latest stable version of Node.js
+  - ps: Install-Product node ''
+  - npm install
+
+build: off
+
+test_script:
+  - npm run appveyorTest
+
+cache:
+  - node_modules -> package.json
+
+notifications:
+  - provider: Email
+    to:
+      - almenon214@gmail.com
+    on_build_success: false
+    
+skip_commits:
+  files:
+    - '**/*.md'
