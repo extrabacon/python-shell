@@ -44,7 +44,7 @@ var PythonShell = require('python-shell');
 var options = {
   mode: 'text',
   pythonPath: 'path/to/python',
-  pythonOptions: ['-u'],
+  pythonOptions: ['-u'], // get print results in real-time
   scriptPath: 'path/to/my/scripts',
   args: ['value1', 'value2', 'value3']
 };
