@@ -46,7 +46,7 @@ var PythonShell = function (script, options) {
     var errorData = '';
     EventEmitter.call(this);
 
-    options = extend({}, PythonShell.defaultOptions, options);
+    options = extend({}, PythonShell.defaultOptions, options,{cwd: options.scriptPath || './'});
     var pythonPath = options.pythonPath || 'python';
     var pythonOptions = toArray(options.pythonOptions);
     var scriptArgs = toArray(options.args);
@@ -57,6 +57,7 @@ var PythonShell = function (script, options) {
     this.formatter = resolve('format', options.formatter || this.mode);
     this.parser = resolve('parse', options.parser || this.mode);
     this.terminated = false;
+
     this.childProcess = spawn(pythonPath, this.command, options);
 
     ['stdout', 'stdin', 'stderr'].forEach(function (name) {
