@@ -2,8 +2,10 @@ node_modules
 npm-debug.log.*
 .vscode
 personal
+*.js
+*.js.map
 
-# DEFAULT PYTON GITIGNORE
+# DEFAULT PYTHON GITIGNORE
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
