@@ -45,9 +45,12 @@ var PythonShell = function (script, options) {
     var self = this;
     var errorData = '';
     EventEmitter.call(this);
-
+    
     options = extend({}, PythonShell.defaultOptions, options);
-    var pythonPath = options.pythonPath || 'python';
+    var pythonPath;
+    if (!options.pythonPath) {
+        pythonPath = process.platform != "win32" ? "python3" : "python"
+    } else pythonPath = options.pythonPath;
     var pythonOptions = toArray(options.pythonOptions);
     var scriptArgs = toArray(options.args);
 
