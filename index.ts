@@ -82,7 +82,10 @@ class PythonShell extends EventEmitter{
         EventEmitter.call(this);
 
         options = <Options>extend({}, PythonShell.defaultOptions, options);
-        let pythonPath = options.pythonPath || 'python';
+        let pythonPath;
+        if (!options.pythonPath) {
+            pythonPath = process.platform != "win32" ? "python3" : "python"
+        } else pythonPath = options.pythonPath;
         let pythonOptions = toArray(options.pythonOptions);
         let scriptArgs = toArray(options.args);
 
