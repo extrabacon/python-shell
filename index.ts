@@ -29,12 +29,16 @@ function extend(obj:{}, ...args) {
 interface Options extends SpawnOptions{
     mode: 'text'|'json'|'binary'
     formatter: (param:string)=>any
-    parser: Function
+    parser: (param:string)=>any
     encoding: string
     pythonPath: string
     pythonOptions: string[]
     scriptPath: string
     args: string[]
+}
+
+class PythonShellError extends Error{
+    traceback: string | Buffer;
 }
 
 /**
@@ -45,21 +49,21 @@ interface Options extends SpawnOptions{
  */
 class PythonShell extends EventEmitter{
     script:string
-    command:any[]
+    command:string[]
     mode:string
-    formatter:any
-    parser:any
+    formatter:(param:string|Object)=>any
+    parser:(param:string)=>any
     terminated:boolean
     childProcess:ChildProcess
     stdin: NodeJS.WriteStream; //or writeable stream? Whats difference?
     stdout: NodeJS.ReadStream;
     stderr: NodeJS.ReadStream;
-    stderrHasEnded:boolean;
-    stdoutHasEnded:boolean;
-    exitCode:number;
-    exitSignal:string;
+    private stderrHasEnded:boolean;
+    private stdoutHasEnded:boolean;
+    private exitCode:number;
+    private exitSignal:string;
     private _remaining:string
-    private _endCallback:(err:any, exitCode:number, exitSignal:string)=>any
+    private _endCallback:(err:PythonShellError, exitCode:number, exitSignal:string)=>any
 
     //@ts-ignore keeping it initialized to {} for backwards API compatability
     static defaultOptions:Options = {}; //allow global overrides for options
@@ -67,6 +71,9 @@ class PythonShell extends EventEmitter{
     constructor(script:string, options:Options) {
         super();
 
+        /**
+         * returns either pythonshell func (if val string) or custom func (if val Function)
+         */
         function resolve(type, val:string|Function) {
             if (typeof val === 'string') {
                 // use a built-in function using its name
@@ -84,6 +91,8 @@ class PythonShell extends EventEmitter{
         options = <Options>extend({}, PythonShell.defaultOptions, options);
         let pythonPath;
         if (!options.pythonPath) {
+            // starting 2020 python2 is deprecated so we choose 3 as default
+            // except for windows which just has "python" command
             pythonPath = process.platform != "win32" ? "python3" : "python"
         } else pythonPath = options.pythonPath;
         let pythonOptions = toArray(options.pythonOptions);
@@ -131,14 +140,14 @@ class PythonShell extends EventEmitter{
         function terminateIfNeeded() {
             if(!self.stderrHasEnded || !self.stdoutHasEnded || (self.exitCode == null && self.exitSignal == null)) return;
 
-            let err;
+            let err:PythonShellError;
             if (errorData || (self.exitCode && self.exitCode !== 0)) {
                 if (errorData) {
                     err = self.parseError(errorData);
                 } else {
-                    err = new Error('process exited with code ' + self.exitCode);
+                    err = new PythonShellError('process exited with code ' + self.exitCode);
                 }
-                err = extend(err, {
+                err = <PythonShellError>extend(err, {
                     executable: pythonPath,
                     options: pythonOptions.length ? pythonOptions : null,
                     script: self.script,
@@ -159,7 +168,7 @@ class PythonShell extends EventEmitter{
 
     // built-in formatters
     static format = {
-        text: function toText(data) {
+        text: function toText(data):string {
             if (!data) return '';
             else if (typeof data !== 'string') return data.toString();
             return data;
@@ -171,7 +180,7 @@ class PythonShell extends EventEmitter{
 
     //built-in parsers
     static parse = {
-        text: function asText(data) {
+        text: function asText(data):string {
             return data;
         },
         json: function asJson(data:string) {
@@ -186,7 +195,7 @@ class PythonShell extends EventEmitter{
      * @param  {Function} callback The callback function to invoke with the script results
      * @return {PythonShell}       The PythonShell instance
      */
-    static run(script:string, options:Options, callback:(err:any, output?:any[])=>any) {
+    static run(script:string, options:Options, callback:(err:PythonShellError, output?:any[])=>any) {
         if (typeof options === 'function') {
             callback = options;
             options = null;
@@ -210,20 +219,20 @@ class PythonShell extends EventEmitter{
      */
     private parseError(data:string|Buffer) {
         let text = ''+data;
-        let error;
+        let error:PythonShellError;
 
         if (/^Traceback/.test(text)) {
             // traceback data is available
             let lines = (''+data).trim().split(new RegExp(newline, 'g'));
             let exception = lines.pop();
-            error = new Error(exception);
+            error = new PythonShellError(exception);
             error.traceback = data;
             // extend stack trace
             error.stack += newline+'    ----- Python Traceback -----'+newline+'  ';
             error.stack += lines.slice(1).join(newline+'  ');
         } else {
             // otherwise, create a simpler error with stderr contents
-            error = new Error(text);
+            error = new PythonShellError(text);
         }
 
         return error;
@@ -275,7 +284,7 @@ class PythonShell extends EventEmitter{
      * Closes the stdin stream, which should cause the process to finish its work and close
      * @returns {PythonShell} The same instance for chaining calls
      */
-    end(callback:(err:any, exitCode:number,exitSignal:string)=>any) {
+    end(callback:(err:PythonShellError, exitCode:number,exitSignal:string)=>any) {
         this.childProcess.stdin.end();
         this._endCallback = callback;
         return this;
