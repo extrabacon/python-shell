@@ -2,6 +2,7 @@ import {EventEmitter} from 'events';
 import { ChildProcess,spawn, SpawnOptions } from 'child_process';
 import {EOL as newline} from 'os';
 import {join} from 'path'
+import {Readable,Writable} from 'stream'
 
 function toArray<T>(source?:T|T[]):T[] {
     if (typeof source === 'undefined' || source === null) {
@@ -26,15 +27,15 @@ function extend(obj:{}, ...args) {
     return obj;
 }
 
-interface Options extends SpawnOptions{
-    mode: 'text'|'json'|'binary'
-    formatter: (param:string)=>any
-    parser: (param:string)=>any
-    encoding: string
-    pythonPath: string
-    pythonOptions: string[]
-    scriptPath: string
-    args: string[]
+export interface Options extends SpawnOptions{
+    mode?: 'text'|'json'|'binary'
+    formatter?: (param:string)=>any
+    parser?: (param:string)=>any
+    encoding?: string
+    pythonPath?: string
+    pythonOptions?: string[]
+    scriptPath?: string
+    args?: string[]
 }
 
 class PythonShellError extends Error{
@@ -47,7 +48,7 @@ class PythonShellError extends Error{
  * @param {object} [options] The launch options (also passed to child_process.spawn)
  * @constructor
  */
-class PythonShell extends EventEmitter{
+export class PythonShell extends EventEmitter{
     script:string
     command:string[]
     mode:string
@@ -55,9 +56,9 @@ class PythonShell extends EventEmitter{
     parser:(param:string)=>any
     terminated:boolean
     childProcess:ChildProcess
-    stdin: NodeJS.WriteStream; //or writeable stream? Whats difference?
-    stdout: NodeJS.ReadStream;
-    stderr: NodeJS.ReadStream;
+    stdin: Writable;
+    stdout: Readable;
+    stderr: Readable;
     private stderrHasEnded:boolean;
     private stdoutHasEnded:boolean;
     private exitCode:number;
@@ -68,7 +69,7 @@ class PythonShell extends EventEmitter{
     //@ts-ignore keeping it initialized to {} for backwards API compatability
     static defaultOptions:Options = {}; //allow global overrides for options
     
-    constructor(script:string, options:Options) {
+    constructor(script:string, options?:Options) {
         super();
 
         /**
@@ -195,7 +196,7 @@ class PythonShell extends EventEmitter{
      * @param  {Function} callback The callback function to invoke with the script results
      * @return {PythonShell}       The PythonShell instance
      */
-    static run(script:string, options:Options, callback:(err:PythonShellError, output?:any[])=>any) {
+    static run(script:string, options?:Options, callback?:(err:PythonShellError, output?:any[])=>any) {
         if (typeof options === 'function') {
             callback = options;
             options = null;
@@ -300,6 +301,3 @@ class PythonShell extends EventEmitter{
         return this;
     };
 };
-
-
-module.exports = PythonShell;
