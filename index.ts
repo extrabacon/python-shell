@@ -40,6 +40,7 @@ export interface Options extends SpawnOptions{
 
 class PythonShellError extends Error{
     traceback: string | Buffer;
+    exitCode?:number;
 }
 
 /**
@@ -59,10 +60,10 @@ export class PythonShell extends EventEmitter{
     stdin: Writable;
     stdout: Readable;
     stderr: Readable;
+    exitSignal:string;
+    exitCode:number;
     private stderrHasEnded:boolean;
     private stdoutHasEnded:boolean;
-    private exitCode:number;
-    private exitSignal:string;
     private _remaining:string
     private _endCallback:(err:PythonShellError, exitCode:number, exitSignal:string)=>any
 
