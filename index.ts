@@ -50,7 +50,7 @@ class PythonShellError extends Error{
  * @constructor
  */
 export class PythonShell extends EventEmitter{
-    script:string
+    scriptPath:string
     command:string[]
     mode:string
     formatter:(param:string|Object)=>any
@@ -70,7 +70,7 @@ export class PythonShell extends EventEmitter{
     //@ts-ignore keeping it initialized to {} for backwards API compatability
     static defaultOptions:Options = {}; //allow global overrides for options
     
-    constructor(script:string, options?:Options) {
+    constructor(scriptPath:string, options?:Options) {
         super();
 
         /**
@@ -100,8 +100,8 @@ export class PythonShell extends EventEmitter{
         let pythonOptions = toArray(options.pythonOptions);
         let scriptArgs = toArray(options.args);
 
-        this.script = join(options.scriptPath || './', script);
-        this.command = pythonOptions.concat(this.script, scriptArgs);
+        this.scriptPath = join(options.scriptPath || './', scriptPath);
+        this.command = pythonOptions.concat(this.scriptPath, scriptArgs);
         this.mode = options.mode || 'text';
         this.formatter = resolve('format', options.formatter || this.mode);
         this.parser = resolve('parse', options.parser || this.mode);
@@ -152,7 +152,7 @@ export class PythonShell extends EventEmitter{
                 err = <PythonShellError>extend(err, {
                     executable: pythonPath,
                     options: pythonOptions.length ? pythonOptions : null,
-                    script: self.script,
+                    script: self.scriptPath,
                     args: scriptArgs.length ? scriptArgs : null,
                     exitCode: self.exitCode
                 });
@@ -192,18 +192,13 @@ export class PythonShell extends EventEmitter{
 
     /**
      * Runs a Python script and returns collected messages
-     * @param  {string}   script   The script to execute
+     * @param  {string}   scriptPath   The path to the script to execute
      * @param  {Options}   options  The execution options
      * @param  {Function} callback The callback function to invoke with the script results
      * @return {PythonShell}       The PythonShell instance
      */
-    static run(script:string, options?:Options, callback?:(err:PythonShellError, output?:any[])=>any) {
-        if (typeof options === 'function') {
-            callback = options;
-            options = null;
-        }
-
-        let pyshell = new PythonShell(script, options);
+    static run(scriptPath:string, options?:Options, callback?:(err:PythonShellError, output?:any[])=>any) {
+        let pyshell = new PythonShell(scriptPath, options);
         let output = [];
 
         return pyshell.on('message', function (message) {
