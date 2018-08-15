@@ -36,6 +36,24 @@ describe('PythonShell', function () {
         });
     });
 
+    describe('#checkSyntax(code:string)', function () {
+
+        // note checkSyntax is a wrapper around checkSyntaxFile
+        // so this tests checkSyntaxFile as well
+
+        it('should check syntax', function ( done) {
+            PythonShell.checkSyntax("x=1").then(()=>{
+                done();
+            })
+        })
+
+        it('should invalidate bad syntax', function ( done) {
+            PythonShell.checkSyntax("x=").catch(()=>{
+                done();
+            })
+        })
+    })
+
     describe('#run(script, options)', function () {
         it('should run the script and return output data', function (done) {
             PythonShell.run('echo_args.py', {

@@ -1,8 +1,9 @@
 import {EventEmitter} from 'events';
-import { ChildProcess,spawn, SpawnOptions } from 'child_process';
-import {EOL as newline} from 'os';
-import {join} from 'path'
+import { ChildProcess,spawn, SpawnOptions, exec } from 'child_process';
+import {EOL as newline, tmpdir} from 'os';
+import {join, sep} from 'path'
 import {Readable,Writable} from 'stream'
+import { writeFile } from 'fs';
 
 function toArray<T>(source?:T|T[]):T[] {
     if (typeof source === 'undefined' || source === null) {
@@ -67,7 +68,10 @@ export class PythonShell extends EventEmitter{
     private _remaining:string
     private _endCallback:(err:PythonShellError, exitCode:number, exitSignal:string)=>any
 
-    //@ts-ignore keeping it initialized to {} for backwards API compatability
+    // starting 2020 python2 is deprecated so we choose 3 as default
+    // except for windows which just has "python" command
+    static defaultPythonPath = process.platform != "win32" ? "python3" : "python";
+
     static defaultOptions:Options = {}; //allow global overrides for options
     
     constructor(scriptPath:string, options?:Options) {
@@ -93,9 +97,7 @@ export class PythonShell extends EventEmitter{
         options = <Options>extend({}, PythonShell.defaultOptions, options);
         let pythonPath;
         if (!options.pythonPath) {
-            // starting 2020 python2 is deprecated so we choose 3 as default
-            // except for windows which just has "python" command
-            pythonPath = process.platform != "win32" ? "python3" : "python"
+            pythonPath = PythonShell.defaultPythonPath;
         } else pythonPath = options.pythonPath;
         let pythonOptions = toArray(options.pythonOptions);
         let scriptArgs = toArray(options.args);
@@ -189,6 +191,41 @@ export class PythonShell extends EventEmitter{
             return JSON.parse(data);
         }
     };
+
+    /**
+	 * checks syntax without executing code
+	 * @param {string} code
+	 * @returns {Promise} rejects w/ stderr if syntax failure
+	 */
+	static async checkSyntax(code:string){
+        let randomInt = Math.floor(Math.random()*10000000000);
+        let filePath = tmpdir + sep + `pythonShellSyntaxCheck${randomInt}.py`
+        
+        // todo: replace this with util.promisify (once we no longer support node v7)
+		return new Promise((resolve, reject) => {
+            writeFile(filePath, code, (err)=>{
+                if (err) reject(err);
+                resolve(this.checkSyntaxFile(filePath));
+            });
+        });
+	}
+
+	/**
+	 * checks syntax without executing code
+	 * @param {string} filePath
+	 * @returns {Promise} rejects w/ stderr if syntax failure
+	 */
+	static async checkSyntaxFile(filePath:string){
+
+		let compileCommand = `${this.defaultPythonPath} -m py_compile ${filePath}`
+
+		return new Promise((resolve, reject) => {
+			exec(compileCommand, (error, stdout, stderr) => {
+				if(error == null) resolve()
+				else reject(stderr)
+			})
+		})	
+	}
 
     /**
      * Runs a Python script and returns collected messages
