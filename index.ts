@@ -3,7 +3,7 @@ import { ChildProcess,spawn, SpawnOptions, exec } from 'child_process';
 import {EOL as newline, tmpdir} from 'os';
 import {join, sep} from 'path'
 import {Readable,Writable} from 'stream'
-import { writeFile } from 'fs';
+import { writeFile, writeFileSync } from 'fs';
 
 function toArray<T>(source?:T|T[]):T[] {
     if (typeof source === 'undefined' || source === null) {
@@ -198,7 +198,7 @@ export class PythonShell extends EventEmitter{
 	 * @returns {Promise} rejects w/ stderr if syntax failure
 	 */
 	static async checkSyntax(code:string){
-        let randomInt = Math.floor(Math.random()*10000000000);
+        let randomInt = PythonShell.getRandomInt();
         let filePath = tmpdir + sep + `pythonShellSyntaxCheck${randomInt}.py`
         
         // todo: replace this with util.promisify (once we no longer support node v7)
@@ -247,6 +247,23 @@ export class PythonShell extends EventEmitter{
     };
 
     /**
+     * Runs the inputted string of python code and returns collected messages. DO NOT ALLOW UNTRUSTED USER INPUT HERE!
+     * @param  {string}   code   The python code to execute
+     * @param  {Options}   options  The execution options
+     * @param  {Function} callback The callback function to invoke with the script results
+     * @return {PythonShell}       The PythonShell instance
+     */
+    static runString(code:string, options?:Options, callback?:(err:PythonShellError, output?:any[])=>any) {
+
+        // put code in temp file
+        let randomInt = PythonShell.getRandomInt();
+        let filePath = tmpdir + sep + `pythonShellFile${randomInt}.py`
+        writeFileSync(filePath, code);
+
+        return PythonShell.run(filePath, options, callback);
+    };
+
+    /**
      * Parses an error thrown from the Python process through stderr
      * @param  {string|Buffer} data The stderr contents to parse
      * @return {Error} The parsed error with extended stack trace when traceback is available
@@ -271,6 +288,13 @@ export class PythonShell extends EventEmitter{
 
         return error;
     };
+
+    /**
+     * gets a random int from 0-10000000000
+     */
+    private static getRandomInt(){
+        return Math.floor(Math.random()*10000000000);
+    }
 
     /**
      * Sends a message to the Python shell through stdin

@@ -54,6 +54,26 @@ describe('PythonShell', function () {
         })
     })
 
+    describe('#runString(script, options)', function () {
+        before(()=>{
+            PythonShell.defaultOptions = {};
+        })
+        it('should be able to execute a string of python code', function (done) {
+            PythonShell.runString('print("hello");print("world")', null, function (err, results) {
+                if (err) return done(err);
+                results.should.be.an.Array().and.have.lengthOf(2);
+                results.should.eql(['hello', 'world']);
+                done();
+            });
+        });
+        after(()=>{
+            PythonShell.defaultOptions = {
+                // reset to match initial value
+                scriptPath: './test/python'
+            };
+        })
+    });
+
     describe('#run(script, options)', function () {
         it('should run the script and return output data', function (done) {
             PythonShell.run('echo_args.py', {
