@@ -296,7 +296,7 @@ describe('PythonShell', function () {
                 done();
             });
         });
-        it('should emit error when error is written to stderr', function (done) {
+        it('should emit error when the program exits because of an unhandled exception', function (done) {
             let pyshell = new PythonShell('error.py');
             pyshell.on('error', function (err) {
                 err.message.should.be.equalOneOf('ZeroDivisionError: integer division or modulo by zero','ZeroDivisionError: division by zero');
@@ -304,6 +304,15 @@ describe('PythonShell', function () {
                 err.traceback.should.containEql('Traceback (most recent call last)');
                 done();
             });
+        });
+        it('should NOT emit error when logging is written to stderr', function (done) {
+            let pyshell = new PythonShell('stderrLogging.py');
+            pyshell.on('error', function (err) {
+                done(new Error("an error should not have been raised"));
+            });
+            pyshell.on('close', function(){
+                done();
+            })
         });
     });
 

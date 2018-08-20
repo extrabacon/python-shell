@@ -145,7 +145,7 @@ export class PythonShell extends EventEmitter{
             if(!self.stderrHasEnded || !self.stdoutHasEnded || (self.exitCode == null && self.exitSignal == null)) return;
 
             let err:PythonShellError;
-            if (errorData || (self.exitCode && self.exitCode !== 0)) {
+            if (self.exitCode && self.exitCode !== 0) {
                 if (errorData) {
                     err = self.parseError(errorData);
                 } else {
