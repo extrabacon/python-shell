@@ -23,6 +23,19 @@ npm test
 
 ## Documentation
 
+### Running python code:
+
+```typescript
+import {PythonShell} from 'python-shell';
+
+PythonShell.runString('x=1+1;print(x)', function (err) {
+  if (err) throw err;
+  console.log('finished');
+});
+```
+
+If the script exits with a non-zero code, an error will be thrown.
+
 ### Running a Python script:
 
 ```typescript
@@ -34,7 +47,7 @@ PythonShell.run('my_script.py', function (err) {
 });
 ```
 
-If the script writes to stderr or exits with a non-zero code, an error will be thrown.
+If the script exits with a non-zero code, an error will be thrown.
 
 ### Running a Python script with arguments and options:
 
@@ -194,6 +207,21 @@ Example:
 ```typescript
 // run a simple script
 PythonShell.run('script.py', function (err, results) {
+  // script finished
+});
+```
+
+#### `#runString(code, options, callback)`
+
+Runs the Python code and invokes `callback` with the results. The callback contains the execution error (if any) as well as an array of messages emitted from the Python script.
+
+This method is also returning the `PythonShell` instance.
+
+Example:
+
+```typescript
+// run a simple script
+PythonShell.run('x=1;print(x)', function (err, results) {
   // script finished
 });
 ```
