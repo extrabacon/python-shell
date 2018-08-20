@@ -32,6 +32,7 @@ export interface Options extends SpawnOptions{
     mode?: 'text'|'json'|'binary'
     formatter?: (param:string)=>any
     parser?: (param:string)=>any
+    stderrParser?: (param:string)=>any
     encoding?: string
     pythonPath?: string
     pythonOptions?: string[]
@@ -56,6 +57,7 @@ export class PythonShell extends EventEmitter{
     mode:string
     formatter:(param:string|Object)=>any
     parser:(param:string)=>any
+    stderrParser:(param:string)=>any
     terminated:boolean
     childProcess:ChildProcess
     stdin: Writable;
@@ -107,6 +109,7 @@ export class PythonShell extends EventEmitter{
         this.mode = options.mode || 'text';
         this.formatter = resolve('format', options.formatter || this.mode);
         this.parser = resolve('parse', options.parser || this.mode);
+        this.stderrParser = resolve('parse', options.stderrParser || this.mode);
         this.terminated = false;
         this.childProcess = spawn(pythonPath, this.command, options);
 
@@ -123,6 +126,7 @@ export class PythonShell extends EventEmitter{
         // listen to stderr and emit errors for incoming data
         this.stderr.on('data', function (data) {
             errorData += ''+data;
+            self.receiveStderr(data);
         });
 
         this.stderr.on('end', function(){
@@ -316,6 +320,20 @@ export class PythonShell extends EventEmitter{
      * @param {string|Buffer} data The data to parse into messages
      */
     receive(data:string|Buffer) {
+        return this.recieveInternal(data, 'message');
+    };
+
+    /**
+     * Parses data received from the Python shell stderr stream and emits "stderr" events
+     * This method is not used in binary mode
+     * Override this method to parse incoming logs from the Python process into messages
+     * @param {string|Buffer} data The data to parse into messages
+     */
+    receiveStderr(data:string|Buffer) {
+        return this.recieveInternal(data, 'stderr');
+    };
+
+    private recieveInternal(data:string|Buffer, emitType:'message'|'stderr'){
         let self = this;
         let parts = (''+data).split(new RegExp(newline,'g'));
 
@@ -332,11 +350,12 @@ export class PythonShell extends EventEmitter{
         this._remaining = lastLine;
 
         parts.forEach(function (part) {
-            self.emit('message', self.parser(part));
+            if(emitType == 'message') self.emit(emitType, self.parser(part));
+            else if(emitType == 'stderr') self.emit(emitType, self.stderrParser(part));
         });
 
         return this;
-    };
+    }
 
     /**
      * Closes the stdin stream, which should cause the process to finish its work and close

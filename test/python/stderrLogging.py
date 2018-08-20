@@ -5,11 +5,6 @@ import logging
 
 # set up logging to file - see previous section for more details
 logging.basicConfig(level=logging.DEBUG)
-# define a Handler which writes INFO messages or higher to the sys.stderr
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-# add the handler to the root logger
-logging.getLogger('').addHandler(console)
 
 # Now, we can log to the root logger, or any other logger. First the root...
 logging.info('Jackdaws love my big sphinx of quartz.')
@@ -17,8 +12,8 @@ logging.info('Jackdaws love my big sphinx of quartz.')
 # Now, define a couple of other loggers which might represent areas in your
 # application:
 
-logger1 = logging.getLogger('myapp.area1')
-logger2 = logging.getLogger('myapp.area2')
+logger1 = logging.getLogger('log1')
+logger2 = logging.getLogger('log2')
 
 logger1.debug('Quick zephyrs blow, vexing daft Jim.')
 logger1.info('How quickly daft jumping zebras vex.')

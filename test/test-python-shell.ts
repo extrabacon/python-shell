@@ -275,6 +275,48 @@ describe('PythonShell', function () {
         });
     });
 
+    describe('.receiveStderr(data)', function () {
+        it('should emit stderr logs as strings when mode is "text"', function (done) {
+            let pyshell = new PythonShell('stderrLogging.py', {
+                mode: 'text'
+            });
+            let count = 0;
+            pyshell.on('stderr', function (stderr) {
+                count === 0 && stderr.should.be.exactly('INFO:root:Jackdaws love my big sphinx of quartz.');
+                count === 1 && stderr.should.be.exactly('DEBUG:log1:Quick zephyrs blow, vexing daft Jim.');
+                count++;
+            }).on('close', function () {
+                count.should.be.exactly(5);
+            }).send('hello').send('world').end(done);
+        });
+        it('should not be invoked when mode is "binary"', function (done) {
+            let pyshell = new PythonShell('echo_args.py', {
+                args: ['hello', 'world'],
+                mode: 'binary'
+            });
+            pyshell.receiveStderr = function () {
+                throw new Error('should not emit stderr in binary mode');
+            };
+            pyshell.end(done);
+        });
+        it('should use a custom parser function', function (done) {
+            let pyshell = new PythonShell('stderrLogging.py', {
+                mode: 'text',
+                stderrParser: function (stderr) {
+                    return stderr.toUpperCase();
+                }
+            });
+            let count = 0;
+            pyshell.on('stderr', function (stderr) {
+                count === 0 && stderr.should.be.exactly('INFO:ROOT:JACKDAWS LOVE MY BIG SPHINX OF QUARTZ.');
+                count === 1 && stderr.should.be.exactly('DEBUG:LOG1:QUICK ZEPHYRS BLOW, VEXING DAFT JIM.');
+                count++;
+            }).on('close', function () {
+                count.should.be.exactly(5);
+            }).send('hello').send('world!').end(done);
+        });
+    });
+
     describe('.end(callback)', function () {
         it('should end normally when exit code is zero', function (done) {
             let pyshell = new PythonShell('exit-code.py');
