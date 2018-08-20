@@ -206,7 +206,7 @@ export class PythonShell extends EventEmitter{
         let filePath = tmpdir + sep + `pythonShellSyntaxCheck${randomInt}.py`
         
         // todo: replace this with util.promisify (once we no longer support node v7)
-		return new Promise((resolve, reject) => {
+	    return new Promise((resolve, reject) => {
             writeFile(filePath, code, (err)=>{
                 if (err) reject(err);
                 resolve(this.checkSyntaxFile(filePath));
@@ -221,14 +221,14 @@ export class PythonShell extends EventEmitter{
 	 */
 	static async checkSyntaxFile(filePath:string){
 
-		let compileCommand = `${this.defaultPythonPath} -m py_compile ${filePath}`
+	    let compileCommand = `${this.defaultPythonPath} -m py_compile ${filePath}`
 
-		return new Promise((resolve, reject) => {
-			exec(compileCommand, (error, stdout, stderr) => {
-				if(error == null) resolve()
-				else reject(stderr)
-			})
-		})	
+        return new Promise((resolve, reject) => {
+            exec(compileCommand, (error, stdout, stderr) => {
+                if(error == null) resolve()
+                else reject(stderr)
+            })
+        })
 	}
 
     /**
