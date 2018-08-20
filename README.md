@@ -258,6 +258,16 @@ Closes the stdin stream, allowing the Python script to finish and exit. The opti
 
 Terminates the python script, the optional end callback is invoked if specified. A kill signal may be provided by `signal`, if `signal` is not specified SIGTERM is sent.
 
+#### `checkSyntax(code:string)`
+
+Checks the syntax of the code and returns a promise.
+Promise is rejected if there is a syntax error.
+
+#### `checkSyntaxFile(filePath:string)`
+
+Checks the syntax of the file and returns a promise.
+Promise is rejected if there is a syntax error.
+
 #### event: `message`
 
 Fires when a chunk of data is parsed from the stdout stream via the `receive` method. If a `parser` method is specified, the result of this function will be the message value. This event is not emitted in binary mode.
