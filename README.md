@@ -23,23 +23,10 @@ npm test
 
 ## Documentation
 
-### Running python code:
-
-```typescript
-import {PythonShell} from 'python-shell';
-
-PythonShell.runString('x=1+1;print(x)', function (err) {
-  if (err) throw err;
-  console.log('finished');
-});
-```
-
-If the script exits with a non-zero code, an error will be thrown.
-
 ### Running a Python script:
 
-```typescript
-import {PythonShell} from 'python-shell';
+```js
+var PythonShell = require('python-shell');
 
 PythonShell.run('my_script.py', function (err) {
   if (err) throw err;
@@ -47,14 +34,14 @@ PythonShell.run('my_script.py', function (err) {
 });
 ```
 
-If the script exits with a non-zero code, an error will be thrown.
+If the script writes to stderr or exits with a non-zero code, an error will be thrown.
 
 ### Running a Python script with arguments and options:
 
-```typescript
-import {PythonShell} from 'python-shell';
+```js
+var PythonShell = require('python-shell');
 
-let options = {
+var options = {
   mode: 'text',
   pythonPath: 'path/to/python',
   pythonOptions: ['-u'], // get print results in real-time
@@ -71,9 +58,9 @@ PythonShell.run('my_script.py', options, function (err, results) {
 
 ### Exchanging data between Node and Python:
 
-```typescript
-import {PythonShell} from 'python-shell';
-let pyshell = new PythonShell('my_script.py');
+```js
+var PythonShell = require('python-shell');
+var pyshell = new PythonShell('my_script.py');
 
 // sends a message to the Python script via stdin
 pyshell.send('hello');
@@ -105,10 +92,9 @@ For more details and examples including Python source code, take a look at the t
 
 ### Error Handling and extended stack traces
 
-An error will be thrown if the process exits with a non-zero exit code. Additionally, if "stderr" contains a formatted Python traceback, the error is augmented with Python exception details including a concatenated stack trace.
+An error will be thrown if the process exits with a non-zero exit code or if data has been written to stderr. Additionally, if "stderr" contains a formatted Python traceback, the error is augmented with Python exception details including a concatenated stack trace.
 
 Sample error with traceback (from test/python/error.py):
-
 ```
 Traceback (most recent call last):
   File "test/python/error.py", line 6, in <module>
@@ -117,10 +103,8 @@ Traceback (most recent call last):
     print 1/0
 ZeroDivisionError: integer division or modulo by zero
 ```
-
 would result into the following error:
-
-```typescript
+```js
 { [Error: ZeroDivisionError: integer division or modulo by zero]
   traceback: 'Traceback (most recent call last):\n  File "test/python/error.py", line 6, in <module>\n    divide_by_zero()\n  File "test/python/error.py", line 4, in divide_by_zero\n    print 1/0\nZeroDivisionError: integer division or modulo by zero\n',
   executable: 'python',
@@ -129,9 +113,7 @@ would result into the following error:
   args: null,
   exitCode: 1 }
 ```
-
 and `err.stack` would look like this:
-
 ```
 Error: ZeroDivisionError: integer division or modulo by zero
     at PythonShell.parseError (python-shell/index.js:131:17)
@@ -159,7 +141,6 @@ Creates an instance of `PythonShell` and starts the Python process
     * `binary`: data is streamed as-is through `stdout` and `stdin`
   * `formatter`: each message to send is transformed using this method, then appended with "\n"
   * `parser`: each line of data (ending with "\n") is parsed with this function and its result is emitted as a message
-  * `stderrParser`: each line of logs (ending with "\n") is parsed with this function and its result is emitted as a message
   * `encoding`: the text encoding to apply on the child process streams (default: "utf8")
   * `pythonPath`: The path where to locate the "python" executable. Default: "python"
   * `pythonOptions`: Array of option switches to pass to "python"
@@ -173,16 +154,15 @@ PythonShell instances have the following properties:
 * `command`: the full command arguments passed to the Python executable
 * `stdin`: the Python stdin stream, used to send data to the child process
 * `stdout`: the Python stdout stream, used for receiving data from the child process
-* `stderr`: the Python stderr stream, used for communicating logs & errors
+* `stderr`: the Python stderr stream, used for communicating errors
 * `childProcess`: the process instance created via `child_process.spawn`
 * `terminated`: boolean indicating whether the process has exited
 * `exitCode`: the process exit code, available after the process has ended
 
 Example:
-
-```typescript
+```js
 // create a new instance
-let shell = new PythonShell('script.py', options);
+var shell = new PythonShell('script.py', options);
 ```
 
 #### `#defaultOptions`
@@ -190,8 +170,7 @@ let shell = new PythonShell('script.py', options);
 Configures default options for all new instances of PythonShell.
 
 Example:
-
-```typescript
+```js
 // setup a default "scriptPath"
 PythonShell.defaultOptions = { scriptPath: '../scripts' };
 ```
@@ -203,25 +182,9 @@ Runs the Python script and invokes `callback` with the results. The callback con
 This method is also returning the `PythonShell` instance.
 
 Example:
-
-```typescript
+```js
 // run a simple script
 PythonShell.run('script.py', function (err, results) {
-  // script finished
-});
-```
-
-#### `#runString(code, options, callback)`
-
-Runs the Python code and invokes `callback` with the results. The callback contains the execution error (if any) as well as an array of messages emitted from the Python script.
-
-This method is also returning the `PythonShell` instance.
-
-Example:
-
-```typescript
-// run a simple script
-PythonShell.run('x=1;print(x)', function (err, results) {
   // script finished
 });
 ```
@@ -231,24 +194,19 @@ PythonShell.run('x=1;print(x)', function (err, results) {
 Sends a message to the Python script via stdin. The data is formatted according to the selected mode (text or JSON), or through a custom function when `formatter` is specified.
 
 Example:
-
-```typescript
+```js
 // send a message in text mode
-let shell = new PythonShell('script.py', { mode: 'text '});
+var shell = new PythonShell('script.py', { mode: 'text '});
 shell.send('hello world!');
 
 // send a message in JSON mode
-let shell = new PythonShell('script.py', { mode: 'json '});
+var shell = new PythonShell('script.py', { mode: 'json '});
 shell.send({ command: "do_stuff", args: [1, 2, 3] });
 ```
 
 #### `.receive(data)`
 
 Parses incoming data from the Python script written via stdout and emits `message` events. This method is called automatically as data is being received from stdout.
-
-#### `.receiveStderr(data)`
-
-Parses incoming logs from the Python script written via stderr and emits `stderr` events. This method is called automatically as data is being received from stderr.
 
 #### `.end(callback)`
 
@@ -258,47 +216,22 @@ Closes the stdin stream, allowing the Python script to finish and exit. The opti
 
 Terminates the python script, the optional end callback is invoked if specified. A kill signal may be provided by `signal`, if `signal` is not specified SIGTERM is sent.
 
-#### `checkSyntax(code:string)`
-
-Checks the syntax of the code and returns a promise.
-Promise is rejected if there is a syntax error.
-
-#### `checkSyntaxFile(filePath:string)`
-
-Checks the syntax of the file and returns a promise.
-Promise is rejected if there is a syntax error.
-
 #### event: `message`
 
 Fires when a chunk of data is parsed from the stdout stream via the `receive` method. If a `parser` method is specified, the result of this function will be the message value. This event is not emitted in binary mode.
 
 Example:
-
-```typescript
+```js
 // receive a message in text mode
-let shell = new PythonShell('script.py', { mode: 'text '});
+var shell = new PythonShell('script.py', { mode: 'text '});
 shell.on('message', function (message) {
   // handle message (a line of text from stdout)
 });
 
 // receive a message in JSON mode
-let shell = new PythonShell('script.py', { mode: 'json '});
+var shell = new PythonShell('script.py', { mode: 'json '});
 shell.on('message', function (message) {
   // handle message (a line of text from stdout, parsed as JSON)
-});
-```
-
-#### event: `stderr`
-
-Fires when a chunk of logs is parsed from the stderr stream via the `receiveStderr` method. If a `stderrParser` method is specified, the result of this function will be the message value. This event is not emitted in binary mode.
-
-Example:
-
-```typescript
-// receive a message in text mode
-let shell = new PythonShell('script.py', { mode: 'text '});
-shell.on('stderr', function (stderr) {
-  // handle stderr (a line of text from stderr)
 });
 ```
 
