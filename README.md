@@ -310,6 +310,10 @@ Fires when the process has been terminated, with an error or not.
 
 Fires when the process terminates with a non-zero exit code, or if data is written to the stderr stream.
 
+## Used By:
+
+Python-Shell is used by [arepl-vscode](https://github.com/almenon/arepl-vscode), [gitinspector](https://github.com/ejwa/gitinspector), [pyspreadsheet](https://github.com/extrabacon/pyspreadsheet), and more!
+
 ## License
 
 The MIT License (MIT)
