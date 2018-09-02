@@ -1,4 +1,4 @@
-# python-shell [![Build status](https://ci.appveyor.com/api/projects/status/m8e3h53vvxg5wb2q?svg=true)](https://ci.appveyor.com/project/Almenon/python-shell)
+# [python-shell](https://www.npmjs.com/package/python-shell) [![Build status](https://ci.appveyor.com/api/projects/status/m8e3h53vvxg5wb2q?svg=true)](https://ci.appveyor.com/project/Almenon/python-shell)
 
 A simple way to run Python scripts from Node.js with basic but efficient inter-process communication and better error handling.
 
