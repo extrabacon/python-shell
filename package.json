@@ -1,6 +1,6 @@
 {
   "name": "python-shell",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Run Python scripts from Node.js with simple (but efficient) inter-process communication through stdio",
   "keywords": [
     "python"
@@ -8,7 +8,7 @@
   "scripts": {
     "test": "tsc -p ./ && mocha -R spec",
     "appveyorTest": "tsc -p ./ && mocha --ui tdd --reporter mocha-appveyor-reporter test/*.js",
-    "compile":"tsc -watch -p ./"
+    "compile": "tsc -watch -p ./"
   },
   "dependencies": {},
   "devDependencies": {
