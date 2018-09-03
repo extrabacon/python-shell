@@ -2,6 +2,9 @@ node_modules
 npm-debug.log.*
 .vscode
 personal
+*.js
+*.js.map
+*.d.ts
 
 # DEFAULT PYTHON GITIGNORE
 

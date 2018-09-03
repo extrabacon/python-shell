@@ -19,6 +19,13 @@
     "should": "^13.2.1",
     "typescript": "^3.0.1"
   },
+  "files":[
+    "*.d.ts",
+    "*.js",
+    "*.js.map",
+    "CHANGELOG.md",
+    "README.md"
+  ],
   "repository": {
     "type": "git",
     "url": "http://github.com/extrabacon/python-shell"
