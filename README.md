@@ -1,4 +1,4 @@
-# python-shell [![Build status](https://ci.appveyor.com/api/projects/status/m8e3h53vvxg5wb2q?svg=true)](https://ci.appveyor.com/project/Almenon/python-shell)
+# [python-shell](https://www.npmjs.com/package/python-shell) [![Build status](https://ci.appveyor.com/api/projects/status/m8e3h53vvxg5wb2q?svg=true)](https://ci.appveyor.com/project/Almenon/python-shell)
 
 A simple way to run Python scripts from Node.js with basic but efficient inter-process communication and better error handling.
 
@@ -309,6 +309,10 @@ Fires when the process has been terminated, with an error or not.
 #### event: `error`
 
 Fires when the process terminates with a non-zero exit code, or if data is written to the stderr stream.
+
+## Used By:
+
+Python-Shell is used by [arepl-vscode](https://github.com/almenon/arepl-vscode), [gitinspector](https://github.com/ejwa/gitinspector), [pyspreadsheet](https://github.com/extrabacon/pyspreadsheet), and more!
 
 ## License
 
