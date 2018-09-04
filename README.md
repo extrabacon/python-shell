@@ -28,7 +28,7 @@ npm test
 ```typescript
 import {PythonShell} from 'python-shell';
 
-PythonShell.runString('x=1+1;print(x)', function (err) {
+PythonShell.runString('x=1+1;print(x)', null, function (err) {
   if (err) throw err;
   console.log('finished');
 });
@@ -41,7 +41,7 @@ If the script exits with a non-zero code, an error will be thrown.
 ```typescript
 import {PythonShell} from 'python-shell';
 
-PythonShell.run('my_script.py', function (err) {
+PythonShell.run('my_script.py', null, function (err) {
   if (err) throw err;
   console.log('finished');
 });
@@ -206,7 +206,7 @@ Example:
 
 ```typescript
 // run a simple script
-PythonShell.run('script.py', function (err, results) {
+PythonShell.run('script.py', null, function (err, results) {
   // script finished
 });
 ```
@@ -221,7 +221,7 @@ Example:
 
 ```typescript
 // run a simple script
-PythonShell.run('x=1;print(x)', function (err, results) {
+PythonShell.run('x=1;print(x)', null, function (err, results) {
   // script finished
 });
 ```
