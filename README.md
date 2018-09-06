@@ -36,6 +36,8 @@ PythonShell.runString('x=1+1;print(x)', null, function (err) {
 
 If the script exits with a non-zero code, an error will be thrown.
 
+Note the use of imports! If you're not using typescript ಠ_ಠ you can [still get imports to work with this guide](https://github.com/extrabacon/python-shell/issues/148#issuecomment-419120209).
+
 ### Running a Python script:
 
 ```typescript
