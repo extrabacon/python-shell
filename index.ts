@@ -35,8 +35,17 @@ export interface Options extends SpawnOptions{
     stderrParser?: (param:string)=>any
     encoding?: string
     pythonPath?: string
+    /**
+     * see https://docs.python.org/3.7/using/cmdline.html
+     */
     pythonOptions?: string[]
+    /**
+     * overrides scriptPath passed into PythonShell constructor
+     */
     scriptPath?: string
+    /**
+     * arguments to your program
+     */
     args?: string[]
 }
 
@@ -97,7 +106,7 @@ export class PythonShell extends EventEmitter{
         EventEmitter.call(this);
 
         options = <Options>extend({}, PythonShell.defaultOptions, options);
-        let pythonPath;
+        let pythonPath:string;
         if (!options.pythonPath) {
             pythonPath = PythonShell.defaultPythonPath;
         } else pythonPath = options.pythonPath;
