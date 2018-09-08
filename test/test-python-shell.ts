@@ -1,12 +1,15 @@
 import * as should from 'should';
 import {PythonShell} from '..'
-import {sep} from 'path'
+import {sep, join} from 'path'
 import {EOL as newline} from 'os'
+import { chdir, cwd } from 'process';
 
 describe('PythonShell', function () {
 
+    const pythonFolder = 'test/python'
+
     PythonShell.defaultOptions = {
-        scriptPath: './test/python'
+        scriptPath: pythonFolder
     };
 
     describe('#ctor(script, options)', function () {
@@ -20,6 +23,27 @@ describe('PythonShell', function () {
                 done();
             });
         });
+        it('should spawn a Python process even if scriptPath option is not specified', function (done) {
+            let originalDirectory = cwd()
+            PythonShell.defaultOptions = {};
+            chdir(join(__dirname, "python"));
+
+            let pyshell = new PythonShell('exit-code.py');
+            pyshell.command.should.eql(['exit-code.py']);
+            pyshell.terminated.should.be.false;
+            pyshell.end(function (err) {
+                if (err) return done(err);
+                pyshell.terminated.should.be.true;
+                done();
+            });
+
+            //reset values to intial status
+            PythonShell.defaultOptions = {
+                scriptPath: pythonFolder
+            };
+            chdir(originalDirectory)
+        });
+        // executing python-shell with a absolute path is tested in runString suite
         it('should spawn a Python process with options', function (done) {
             let pyshell = new PythonShell('exit-code.py', {
                 pythonOptions: ['-u']
@@ -69,7 +93,7 @@ describe('PythonShell', function () {
         after(()=>{
             PythonShell.defaultOptions = {
                 // reset to match initial value
-                scriptPath: './test/python'
+                scriptPath: pythonFolder
             };
         })
     });

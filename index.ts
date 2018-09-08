@@ -113,7 +113,7 @@ export class PythonShell extends EventEmitter{
         let pythonOptions = toArray(options.pythonOptions);
         let scriptArgs = toArray(options.args);
 
-        this.scriptPath = join(options.scriptPath || './', scriptPath);
+        this.scriptPath = join(options.scriptPath || '', scriptPath);
         this.command = pythonOptions.concat(this.scriptPath, scriptArgs);
         this.mode = options.mode || 'text';
         this.formatter = resolve('format', options.formatter || this.mode);
