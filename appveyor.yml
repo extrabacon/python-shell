@@ -4,6 +4,12 @@ branches:
   except:
     - gh-pages
 
+# Skipping commits affecting specific files (GitHub only). More details here: /docs/appveyor-yml
+skip_commits:
+  files:
+    - '*.md'
+    - 'CHANGELOG'
+
 image:
 - Visual Studio 2017
 - Ubuntu
