@@ -1,5 +1,9 @@
 # this script based off of https://github.com/tolbertam/mocha-appveyor-reporter/blob/master/appveyor.yml
 
+image:
+- Visual Studio 2017
+- Ubuntu
+
 install:
   # Get the latest stable version of Node.js
   - ps: Install-Product node ''
