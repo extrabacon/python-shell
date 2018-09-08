@@ -9,7 +9,7 @@ describe('PythonShell', function () {
     const pythonFolder = 'test/python'
 
     PythonShell.defaultOptions = {
-        scriptPath: pythonFolder
+        scriptFolder: pythonFolder
     };
 
     describe('#ctor(script, options)', function () {
@@ -39,7 +39,7 @@ describe('PythonShell', function () {
 
             //reset values to intial status
             PythonShell.defaultOptions = {
-                scriptPath: pythonFolder
+                scriptFolder: pythonFolder
             };
             chdir(originalDirectory)
         });
@@ -93,7 +93,7 @@ describe('PythonShell', function () {
         after(()=>{
             PythonShell.defaultOptions = {
                 // reset to match initial value
-                scriptPath: pythonFolder
+                scriptFolder: pythonFolder
             };
         })
     });
