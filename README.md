@@ -223,7 +223,7 @@ Example:
 
 ```typescript
 // run a simple script
-PythonShell.run('x=1;print(x)', null, function (err, results) {
+PythonShell.runString('x=1;print(x)', null, function (err, results) {
   // script finished
 });
 ```
