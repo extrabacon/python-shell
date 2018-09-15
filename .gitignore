@@ -5,6 +5,8 @@ personal
 *.js
 *.js.map
 *.d.ts
+.nyc_output
+coverage
 
 # DEFAULT PYTHON GITIGNORE
 
