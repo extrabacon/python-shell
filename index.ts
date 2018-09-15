@@ -85,6 +85,11 @@ export class PythonShell extends EventEmitter{
 
     static defaultOptions:Options = {}; //allow global overrides for options
     
+    /**
+     * spawns a python process
+     * @param scriptPath path to script. Relative to current directory or options.scriptFolder if specified
+     * @param options 
+     */
     constructor(scriptPath:string, options?:Options) {
         super();
 
@@ -100,6 +105,8 @@ export class PythonShell extends EventEmitter{
                 return val;
             }
         }
+
+        if(scriptPath.trim().length == 0) throw Error("scriptPath cannot be empty! You must give a script for python to run")
 
         let self = this;
         let errorData = '';
