@@ -275,6 +275,11 @@ Promise is rejected if there is a syntax error.
 Checks the syntax of the file and returns a promise.
 Promise is rejected if there is a syntax error.
 
+#### `version(pythonPath?:string)`
+
+Returns the python version. Optional pythonPath param to get the version 
+of a specific python interpreter.
+
 #### event: `message`
 
 Fires when a chunk of data is parsed from the stdout stream via the `receive` method. If a `parser` method is specified, the result of this function will be the message value. This event is not emitted in binary mode.
