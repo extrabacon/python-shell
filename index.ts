@@ -1,9 +1,10 @@
 import {EventEmitter} from 'events';
-import { ChildProcess,spawn, SpawnOptions, exec } from 'child_process';
+import { ChildProcess,spawn, SpawnOptions, exec, execSync } from 'child_process';
 import {EOL as newline, tmpdir} from 'os';
 import {join, sep} from 'path'
 import {Readable,Writable} from 'stream'
 import { writeFile, writeFileSync } from 'fs';
+import { promisify } from 'util';
 
 function toArray<T>(source?:T|T[]):T[] {
     if (typeof source === 'undefined' || source === null) {
@@ -282,6 +283,16 @@ export class PythonShell extends EventEmitter{
 
         return PythonShell.run(filePath, options, callback);
     };
+
+    static getVersion(pythonPath?:string){
+        if(!pythonPath) pythonPath == this.defaultPythonPath
+        let execPromise = promisify(exec)
+        return execPromise(pythonPath + " --version")
+    }
+
+    static getVersionSync(pythonPath?:string){
+        return execSync(pythonPath + " --version").toString()
+    }
 
     /**
      * Parses an error thrown from the Python process through stderr
