@@ -220,7 +220,7 @@ export class PythonShell extends EventEmitter{
 	 */
 	static async checkSyntax(code:string){
         let randomInt = PythonShell.getRandomInt();
-        let filePath = tmpdir + sep + `pythonShellSyntaxCheck${randomInt}.py`
+        let filePath = tmpdir() + sep + `pythonShellSyntaxCheck${randomInt}.py`
         
         // todo: replace this with util.promisify (once we no longer support node v7)
 	    return new Promise((resolve, reject) => {
@@ -240,7 +240,7 @@ export class PythonShell extends EventEmitter{
 
 	    let compileCommand = `${this.defaultPythonPath} -m py_compile ${filePath}`
 
-        return new Promise((resolve, reject) => {
+        return new Promise<string>((resolve, reject) => {
             exec(compileCommand, (error, stdout, stderr) => {
                 if(error == null) resolve()
                 else reject(stderr)
