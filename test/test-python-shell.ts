@@ -78,17 +78,6 @@ describe('PythonShell', function () {
         })
     })
 
-    describe("#getVersion", function(){
-        it('should return a string', function(done){
-            PythonShell.getVersion().then(version => {
-                console.log(version)
-                version.stdout.should.be.a.String();
-                version.stdout.length.should.be.greaterThan(0)
-                done()
-            })
-        })
-    })
-
     describe("#getVersionSync", function(){
         it('should return a string', function(){
             const version = PythonShell.getVersionSync()

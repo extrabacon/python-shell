@@ -213,7 +213,7 @@ export class PythonShell extends EventEmitter{
         }
     };
 
-    /**
+        /**
 	 * checks syntax without executing code
 	 * @param {string} code
 	 * @returns {Promise} rejects w/ stderr if syntax failure
@@ -284,13 +284,8 @@ export class PythonShell extends EventEmitter{
         return PythonShell.run(filePath, options, callback);
     };
 
-    static getVersion(pythonPath?:string){
-        if(!pythonPath) pythonPath == this.defaultPythonPath
-        let execPromise = promisify(exec)
-        return execPromise(pythonPath + " --version")
-    }
-
     static getVersionSync(pythonPath?:string){
+        if(!pythonPath) pythonPath = this.defaultPythonPath
         return execSync(pythonPath + " --version").toString()
     }
 
