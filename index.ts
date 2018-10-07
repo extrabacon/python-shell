@@ -4,7 +4,6 @@ import {EOL as newline, tmpdir} from 'os';
 import {join, sep} from 'path'
 import {Readable,Writable} from 'stream'
 import { writeFile, writeFileSync } from 'fs';
-import { promisify } from 'util';
 
 function toArray<T>(source?:T|T[]):T[] {
     if (typeof source === 'undefined' || source === null) {
