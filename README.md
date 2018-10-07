@@ -233,6 +233,21 @@ PythonShell.runString('x=1;print(x)', null, function (err, results) {
 });
 ```
 
+#### `#checkSyntax(code:string)`
+
+Checks the syntax of the code and returns a promise.
+Promise is rejected if there is a syntax error.
+
+#### `#checkSyntaxFile(filePath:string)`
+
+Checks the syntax of the file and returns a promise.
+Promise is rejected if there is a syntax error.
+
+#### `#getVersionSync(pythonPath?:string)`
+
+Returns the python version. Optional pythonPath param to get the version 
+of a specific python interpreter.
+
 #### `.send(message)`
 
 Sends a message to the Python script via stdin. The data is formatted according to the selected mode (text or JSON), or through a custom function when `formatter` is specified.
@@ -264,21 +279,6 @@ Closes the stdin stream, allowing the Python script to finish and exit. The opti
 #### `.terminate(signal)`
 
 Terminates the python script, the optional end callback is invoked if specified. A kill signal may be provided by `signal`, if `signal` is not specified SIGTERM is sent.
-
-#### `checkSyntax(code:string)`
-
-Checks the syntax of the code and returns a promise.
-Promise is rejected if there is a syntax error.
-
-#### `checkSyntaxFile(filePath:string)`
-
-Checks the syntax of the file and returns a promise.
-Promise is rejected if there is a syntax error.
-
-#### `getVersionSync(pythonPath?:string)`
-
-Returns the python version. Optional pythonPath param to get the version 
-of a specific python interpreter.
 
 #### event: `message`
 
