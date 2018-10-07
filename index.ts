@@ -40,9 +40,9 @@ export interface Options extends SpawnOptions{
      */
     pythonOptions?: string[]
     /**
-     * the scriptPath passed to PythonShell is executed relative to scriptFolder, if specified
+     * overrides scriptPath passed into PythonShell constructor
      */
-    scriptFolder?: string
+    scriptPath?: string
     /**
      * arguments to your program
      */
@@ -120,7 +120,7 @@ export class PythonShell extends EventEmitter{
         let pythonOptions = toArray(options.pythonOptions);
         let scriptArgs = toArray(options.args);
 
-        this.scriptPath = join(options.scriptFolder || '', scriptPath);
+        this.scriptPath = join(options.scriptPath || '', scriptPath);
         this.command = pythonOptions.concat(this.scriptPath, scriptArgs);
         this.mode = options.mode || 'text';
         this.formatter = resolve('format', options.formatter || this.mode);
