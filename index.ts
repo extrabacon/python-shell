@@ -28,6 +28,13 @@ function extend(obj:{}, ...args) {
     return obj;
 }
 
+/**
+ * gets a random int from 0-10000000000
+ */
+function getRandomInt(){
+    return Math.floor(Math.random()*10000000000);
+}
+
 export interface Options extends SpawnOptions{
     mode?: 'text'|'json'|'binary'
     formatter?: (param:string)=>any
@@ -218,8 +225,8 @@ export class PythonShell extends EventEmitter{
 	 * @returns {Promise} rejects w/ stderr if syntax failure
 	 */
 	static async checkSyntax(code:string){
-        let randomInt = PythonShell.getRandomInt();
-        let filePath = tmpdir() + sep + `pythonShellSyntaxCheck${randomInt}.py`
+        const randomInt = getRandomInt();
+        const filePath = tmpdir() + sep + `pythonShellSyntaxCheck${randomInt}.py`
         
         // todo: replace this with util.promisify (once we no longer support node v7)
 	    return new Promise((resolve, reject) => {
@@ -276,8 +283,8 @@ export class PythonShell extends EventEmitter{
     static runString(code:string, options?:Options, callback?:(err:PythonShellError, output?:any[])=>any) {
 
         // put code in temp file
-        let randomInt = PythonShell.getRandomInt();
-        let filePath = tmpdir + sep + `pythonShellFile${randomInt}.py`
+        const randomInt = getRandomInt();
+        const filePath = tmpdir + sep + `pythonShellFile${randomInt}.py`
         writeFileSync(filePath, code);
 
         return PythonShell.run(filePath, options, callback);
@@ -313,13 +320,6 @@ export class PythonShell extends EventEmitter{
 
         return error;
     };
-
-    /**
-     * gets a random int from 0-10000000000
-     */
-    private static getRandomInt(){
-        return Math.floor(Math.random()*10000000000);
-    }
 
     /**
      * Sends a message to the Python shell through stdin
