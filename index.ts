@@ -35,6 +35,7 @@ function extend(obj:{}, ...args) {
 function getRandomInt(){
     return Math.floor(Math.random()*10000000000);
 }
+const execPromise = promisify(exec)
 
 export interface Options extends SpawnOptions{
     /**
@@ -235,6 +236,7 @@ export class PythonShell extends EventEmitter{
 
     /**
 	 * checks syntax without executing code
+<<<<<<< HEAD
 	 * @returns {Promise} rejects w/ stderr if syntax failure
 	 */
 	static async checkSyntax(code:string){
@@ -253,12 +255,26 @@ export class PythonShell extends EventEmitter{
     static getPythonPath(){
         return this.defaultOptions.pythonPath ? this.defaultOptions.pythonPath : this.defaultPythonPath;
     }
+=======
+	 * @returns rejects promise w/ string error output if syntax failure
+	 */
+	static async checkSyntax(code:string){
+        let randomInt = PythonShell.getRandomInt();
+        let filePath = tmpdir() + sep + `pythonShellSyntaxCheck${randomInt}.py`
+
+        const writeFilePromise = promisify(writeFile)
+        return writeFilePromise(filePath, code).then(()=>{
+            return this.checkSyntaxFile(filePath)
+        })
+	}
+>>>>>>> checkSyntax now uses promises
 
 	/**
 	 * checks syntax without executing code
 	 * @returns {Promise} rejects w/ stderr if syntax failure
 	 */
 	static async checkSyntaxFile(filePath:string){
+<<<<<<< HEAD
 
         const pythonPath = this.getPythonPath()
 	    const compileCommand = `${pythonPath} -m py_compile ${filePath}`
@@ -269,6 +285,10 @@ export class PythonShell extends EventEmitter{
                 else reject(stderr)
             })
         })
+=======
+	    let compileCommand = `${this.defaultPythonPath} -m py_compile ${filePath}`
+        return execPromise(compileCommand)
+>>>>>>> checkSyntax now uses promises
 	}
 
     /**
@@ -307,8 +327,12 @@ export class PythonShell extends EventEmitter{
     };
 
     static getVersion(pythonPath?:string){
+<<<<<<< HEAD
         if(!pythonPath) pythonPath = this.getPythonPath()
         const execPromise = promisify(exec)
+=======
+        if(!pythonPath) pythonPath = this.defaultPythonPath
+>>>>>>> checkSyntax now uses promises
         return execPromise(pythonPath + " --version");
     }
 
