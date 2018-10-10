@@ -243,6 +243,11 @@ Promise is rejected if there is a syntax error.
 Checks the syntax of the file and returns a promise.
 Promise is rejected if there is a syntax error.
 
+#### `#getVersion(pythonPath?:string)`
+
+Returns the python version. Optional pythonPath param to get the version 
+of a specific python interpreter.
+
 #### `#getVersionSync(pythonPath?:string)`
 
 Returns the python version. Optional pythonPath param to get the version 
