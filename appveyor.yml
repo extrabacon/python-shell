@@ -9,17 +9,18 @@ image:
 - Ubuntu
 
 environment:
-  - nodejs_version: "8"
-    PYTHON: "C:\\Python27"
+  matrix:
+    - nodejs_version: "8"
+      PYTHON: "C:\\Python27"
     
-  - nodejs_version: "8"
-    PYTHON: "C:\\Python36-x64"
+    - nodejs_version: "8"
+      PYTHON: "C:\\Python36-x64"
     
-  - nodejs_version: "10"
-    PYTHON: "C:\\Python27"
+    - nodejs_version: "10"
+      PYTHON: "C:\\Python27"
     
-  - nodejs_version: "10"
-    PYTHON: "C:\\Python36-x64"
+    - nodejs_version: "10"
+      PYTHON: "C:\\Python36-x64"
   
 install:
   - npm install
