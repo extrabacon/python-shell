@@ -8,10 +8,19 @@ image:
 - Visual Studio 2017
 - Ubuntu
 
-stack: node 8, python 3.6
 environment:
-  nodejs_version: "8"
-
+  - nodejs_version: "8"
+    PYTHON: "C:\\Python27"
+    
+  - nodejs_version: "8"
+    PYTHON: "C:\\Python36-x64"
+    
+  - nodejs_version: "10"
+    PYTHON: "C:\\Python27"
+    
+  - nodejs_version: "10"
+    PYTHON: "C:\\Python36-x64"
+  
 install:
   - npm install
 
@@ -32,3 +41,6 @@ notifications:
 skip_commits:
   files:
     - '**/*.md'
+
+matrix:
+  fast_finish: true
