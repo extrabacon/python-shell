@@ -42,6 +42,3 @@ notifications:
 skip_commits:
   files:
     - '**/*.md'
-
-matrix:
-  fast_finish: true
