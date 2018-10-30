@@ -57,7 +57,7 @@ export interface Options extends SpawnOptions{
     args?: string[]
 }
 
-class PythonShellError extends Error{
+export class PythonShellError extends Error{
     traceback: string | Buffer;
     exitCode?:number;
 }
