@@ -23,6 +23,8 @@ environment:
       PYTHON: "C:\\Python36-x64"
   
 install:
+  - ps: Install-Product node $env:nodejs_version
+  - sh: nvm install $nodejs_version
   - npm install
 
 build: off
