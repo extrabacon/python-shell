@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "test": "tsc -p ./ && mocha",
-    "appveyorTest": "tsc -p ./ && mocha --ui tdd --reporter mocha-appveyor-reporter test/*.js --timeout 3000",
+    "appveyorTest": "tsc -p ./ && mocha --reporter mocha-appveyor-reporter test/*.js",
     "compile": "tsc -watch -p ./"
   },
   "dependencies": {},
