@@ -144,7 +144,7 @@ describe('PythonShell', function () {
             });
         });
         it('should run multiple scripts and fail with an extended stack trace for each of them', function (done) {
-            let numberOfTimesToRun = 20;
+            let numberOfTimesToRun = 5;
             for (let i = 0; i < numberOfTimesToRun; i++) {
                 runSingleErrorScript(end);
             }
@@ -166,7 +166,7 @@ describe('PythonShell', function () {
         });
 
         it('should run multiple scripts and return output data for each of them', function (done) {
-            let numberOfTimesToRun = 20;
+            let numberOfTimesToRun = 5;
             for (let i = 0; i < numberOfTimesToRun; i++) {
                 runSingleScript(end);
             }
