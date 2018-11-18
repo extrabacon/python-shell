@@ -325,7 +325,7 @@ Fires when the process has been terminated, with an error or not.
 
 #### event: `error`
 
-Fires when the process terminates with a non-zero exit code, or if data is written to the stderr stream.
+Fires when the process terminates with a non-zero exit code.
 
 ## Used By:
 
