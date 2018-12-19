@@ -14,6 +14,10 @@ describe('PythonShell', function () {
 
     describe('#ctor(script, options)', function () {
         it('should spawn a Python process', function (done) {
+            // spawning python might take a while for the first time
+            // after this python should be in memory and not need extra time for startup
+            this.timeout(3000)
+
             let pyshell = new PythonShell('exit-code.py');
             pyshell.command.should.eql(['test' + sep + 'python' + sep + 'exit-code.py']);
             pyshell.terminated.should.be.false;
