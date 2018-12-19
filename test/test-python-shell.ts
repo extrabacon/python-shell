@@ -192,6 +192,35 @@ describe('PythonShell', function () {
             }
 
         });
+        
+        it('should be able to run modules', function(done){
+            PythonShell.defaultOptions = {};
+            
+            PythonShell.run('-m', {
+                args: ['timeit', '-n 1', `'x=5'`]
+            }, function (err, results) {
+
+                PythonShell.defaultOptions = {
+                    // reset to match initial value
+                    scriptPath: pythonFolder
+                };
+
+                if (err) return done(err);
+                results.should.be.an.Array();
+                results[0].should.be.an.String();
+                results[0].slice(0,6).should.eql('1 loop');
+                done();
+            });
+        })
+
+        after(()=>{
+            // should be able to run modules test should theoretically reset this
+            // but we have this to in case something goes horribly wrong with the test
+            PythonShell.defaultOptions = {
+                // reset to match initial value
+                scriptPath: pythonFolder
+            };
+        })
     });
 
     describe('.send(message)', function () {
