@@ -1,6 +1,6 @@
 {
   "name": "python-shell",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Run Python scripts from Node.js with simple (but efficient) inter-process communication through stdio",
   "keywords": [
     "python"
