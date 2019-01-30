@@ -33,7 +33,6 @@ build: off
 
 test_script:
   - npm run appveyorTest
-  - nyc reporter
   - nyc report --reporter=json
   - codecov -f coverage/coverage-final.json
 
