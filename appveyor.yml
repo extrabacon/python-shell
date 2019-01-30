@@ -26,11 +26,16 @@ install:
   - cmd: powershell Install-Product node $env:nodejs_version
   - sh: nvm install $nodejs_version
   - npm install
+  - npm install codecov -g
+  - npm install nyc -g
 
 build: off
 
 test_script:
   - npm run appveyorTest
+  - nyc reporter
+  - nyc report --reporter=json
+  - codecov -f coverage/coverage-final.json
 
 cache:
   - node_modules -> package.json
