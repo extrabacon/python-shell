@@ -244,7 +244,12 @@ export class PythonShell extends EventEmitter{
 	 */
 	static async checkSyntaxFile(filePath:string){
 
-	    let compileCommand = `${this.defaultPythonPath} -m py_compile ${filePath}`
+        let pythonPath:string;
+        if (this.defaultOptions.pythonPath) {
+            pythonPath = this.defaultOptions.pythonPath;
+        } else pythonPath = this.defaultPythonPath;
+
+	    let compileCommand = `${pythonPath} -m py_compile ${filePath}`
 
         return new Promise<string>((resolve, reject) => {
             exec(compileCommand, (error, stdout, stderr) => {
