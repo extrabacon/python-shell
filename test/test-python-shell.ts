@@ -80,15 +80,6 @@ describe('PythonShell', function () {
                 done();
             })
         })
-
-        it('should honour defaultOptions.pythonPath', function ( done) {
-            PythonShell.defaultOptions = {
-                pythonPath: "/usr/bin/python2.7"
-            };
-            PythonShell.checkSyntax("print 1").then(()=>{
-                done();
-            })
-        })
     })
 
     // #158 these tests are failing on appveyor windows node 8/10 python 2/3
