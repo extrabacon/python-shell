@@ -138,29 +138,37 @@ export class PythonShell extends EventEmitter{
 
         ['stdout', 'stdin', 'stderr'].forEach(function (name) {
             self[name] = self.childProcess[name];
-            self.parser && self[name].setEncoding(options.encoding || 'utf8');
+            self.parser && self[name] && self[name].setEncoding(options.encoding || 'utf8');
         });
 
         // parse incoming data on stdout
-        if (this.parser) {
+        if (this.parser && this.stdout) {
             this.stdout.on('data', this.receive.bind(this));
         }
 
         // listen to stderr and emit errors for incoming data
-        this.stderr.on('data', function (data) {
-            errorData += ''+data;
-            self.receiveStderr(data);
-        });
+        if (this.stderr) {
+            this.stderr.on('data', function (data) {
+                errorData += ''+data;
+                self.receiveStderr(data);
+            });
 
-        this.stderr.on('end', function(){
-            self.stderrHasEnded = true
-            terminateIfNeeded();
-        })
+            this.stderr.on('end', function(){
+                self.stderrHasEnded = true;
+                terminateIfNeeded();
+            });
+        } else {
+            self.stderrHasEnded = true;
+        }
 
-        this.stdout.on('end', function(){
-            self.stdoutHasEnded = true
-            terminateIfNeeded();
-        })
+        if (this.stdout) {
+            this.stdout.on('end', function(){
+                self.stdoutHasEnded = true;
+                terminateIfNeeded();
+            });
+        } else {
+            self.stdoutHasEnded = true;
+        }
 
         this.childProcess.on('exit', function (code,signal) {
             self.exitCode = code;
@@ -339,6 +347,7 @@ export class PythonShell extends EventEmitter{
      * @returns {PythonShell} The same instance for chaining calls
      */
     send(message:string|Object) {
+        if (!this.stdin) throw new Error("stdin not open for writting");
         let data = this.formatter ? this.formatter(message) : message;
         if (this.mode !== 'binary') data += newline;
         this.stdin.write(data);
@@ -352,7 +361,7 @@ export class PythonShell extends EventEmitter{
      * @param {string|Buffer} data The data to parse into messages
      */
     receive(data:string|Buffer) {
-        return this.recieveInternal(data, 'message');
+        return this.receiveInternal(data, 'message');
     };
 
     /**
@@ -362,10 +371,10 @@ export class PythonShell extends EventEmitter{
      * @param {string|Buffer} data The data to parse into messages
      */
     receiveStderr(data:string|Buffer) {
-        return this.recieveInternal(data, 'stderr');
+        return this.receiveInternal(data, 'stderr');
     };
 
-    private recieveInternal(data:string|Buffer, emitType:'message'|'stderr'){
+    private receiveInternal(data:string|Buffer, emitType:'message'|'stderr'){
         let self = this;
         let parts = (''+data).split(new RegExp(newline,'g'));
 
@@ -394,7 +403,9 @@ export class PythonShell extends EventEmitter{
      * @returns {PythonShell} The same instance for chaining calls
      */
     end(callback:(err:PythonShellError, exitCode:number,exitSignal:string)=>any) {
-        this.childProcess.stdin.end();
+        if (this.childProcess.stdin) {
+            this.childProcess.stdin.end();
+        }
         this._endCallback = callback;
         return this;
     };

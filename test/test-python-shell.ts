@@ -225,6 +225,22 @@ describe('PythonShell', function () {
                 scriptPath: pythonFolder
             };
         })
+
+        it('should run PythonShell normally without access to std streams', function (done) {
+            var pyshell = PythonShell.run('exit-code.py', {
+                // 3 different ways of assigning values to the std streams in child_process.spawn()
+                // * ignore - pipe to /dev/null
+                // * inherit - inherit fd from parent process;
+                // * process.stderr - pass output directly to that stream.
+                stdio: ['ignore', 'inherit', process.stderr],
+                args: ["0"]
+            }, done);
+
+            should(pyshell.stdin).be.eql(null);
+            should(pyshell.stdout).be.eql(null);
+            should(pyshell.stderr).be.eql(null);
+            should.throws(() => {pyshell.send("asd")});
+        });
     });
 
     describe('.send(message)', function () {
