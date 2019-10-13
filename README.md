@@ -330,7 +330,7 @@ Fires when the process terminates with a non-zero exit code.
 
 ## Used By:
 
-Python-Shell is used by [arepl-vscode](https://github.com/almenon/arepl-vscode), [gitinspector](https://github.com/ejwa/gitinspector), [pyspreadsheet](https://github.com/extrabacon/pyspreadsheet), and more!
+Python-Shell is used by [arepl-vscode](https://github.com/almenon/arepl-vscode), [gitinspector](https://github.com/ejwa/gitinspector), [pyspreadsheet](https://github.com/extrabacon/pyspreadsheet), [AtlantOS Ocean Data QC](https://github.com/ocean-data-qc/ocean-data-qc) and more!
 
 ## License
 
