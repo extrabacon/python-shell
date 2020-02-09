@@ -97,7 +97,6 @@ pyshell.end(function (err,code,signal) {
   console.log('The exit code was: ' + code);
   console.log('The exit signal was: ' + signal);
   console.log('finished');
-  console.log('finished');
 });
 ```
 
