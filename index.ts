@@ -325,7 +325,7 @@ export class PythonShell extends EventEmitter{
 
         if (/^Traceback/.test(text)) {
             // traceback data is available
-            let lines = (''+data).trim().split(newline);
+            let lines = text.trim().split(newline);
             let exception = lines.pop();
             error = new PythonShellError(exception);
             error.traceback = data;
