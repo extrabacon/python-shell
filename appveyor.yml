@@ -10,16 +10,10 @@ image:
 
 environment:
   matrix:
-    - nodejs_version: "8"
-      PYTHON: "C:\\Python27"
-    
-    - nodejs_version: "8"
+    - nodejs_version: "10"
       PYTHON: "C:\\Python36-x64"
-    
-    - nodejs_version: "10"
-      PYTHON: "C:\\Python27"
-    
-    - nodejs_version: "10"
+
+    - nodejs_version: "12"
       PYTHON: "C:\\Python36-x64"
   
 install:
