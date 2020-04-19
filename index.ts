@@ -325,7 +325,7 @@ export class PythonShell extends EventEmitter{
 
         if (/^Traceback/.test(text)) {
             // traceback data is available
-            let lines = (''+data).trim().split(new RegExp(newline, 'g'));
+            let lines = (''+data).trim().split(newline);
             let exception = lines.pop();
             error = new PythonShellError(exception);
             error.traceback = data;
@@ -376,7 +376,7 @@ export class PythonShell extends EventEmitter{
 
     private receiveInternal(data:string|Buffer, emitType:'message'|'stderr'){
         let self = this;
-        let parts = (''+data).split(new RegExp(newline,'g'));
+        let parts = (''+data).split(newline);
 
         if (parts.length === 1) {
             // an incomplete record, keep buffering
