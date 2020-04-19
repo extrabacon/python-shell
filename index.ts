@@ -1,8 +1,8 @@
-import {EventEmitter} from 'events';
-import { ChildProcess,spawn, SpawnOptions, exec, execSync } from 'child_process';
-import {EOL as newline, tmpdir} from 'os';
-import {join, sep} from 'path'
-import {Readable,Writable} from 'stream'
+import { EventEmitter } from 'events';
+import { ChildProcess, spawn, SpawnOptions, exec, execSync } from 'child_process';
+import { EOL as newline, tmpdir} from 'os';
+import { join, sep } from 'path'
+import { Readable, Writable } from 'stream'
 import { writeFile, writeFileSync } from 'fs';
 import { promisify } from 'util';
 
