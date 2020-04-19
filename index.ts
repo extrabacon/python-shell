@@ -347,7 +347,7 @@ export class PythonShell extends EventEmitter{
      * @returns {PythonShell} The same instance for chaining calls
      */
     send(message:string|Object) {
-        if (!this.stdin) throw new Error("stdin not open for writting");
+        if (!this.stdin) throw new Error("stdin not open for writing");
         let data = this.formatter ? this.formatter(message) : message;
         if (this.mode !== 'binary') data += newline;
         this.stdin.write(data);
