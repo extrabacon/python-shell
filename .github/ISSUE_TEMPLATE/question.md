@@ -1,6 +1,6 @@
 ---
 name: Question
-about: Create a report to help us improve
+about: A question about python-shell
 title: ''
 labels: 'question'
 assignees: ''
