@@ -37,6 +37,9 @@ function getRandomInt(){
 }
 
 export interface Options extends SpawnOptions{
+    /**
+     * if binary is enabled message and stderr events will not be emitted
+     */
     mode?: 'text'|'json'|'binary'
     formatter?: (param:string)=>any
     parser?: (param:string)=>any
@@ -147,7 +150,7 @@ export class PythonShell extends EventEmitter{
         }
 
         // listen to stderr and emit errors for incoming data
-        if (this.stderr) {
+        if (this.stderrParser && this.stderr) {
             this.stderr.on('data', function (data) {
                 errorData += ''+data;
                 self.receiveStderr(data);

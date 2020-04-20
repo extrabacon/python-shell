@@ -348,7 +348,8 @@ describe('PythonShell', function () {
                 mode: 'binary'
             });
             pyshell.receive = function () {
-                throw new Error('should not emit messages in binary mode');
+                done('should not emit messages in binary mode');
+                return undefined
             };
             pyshell.end(done);
         });
@@ -385,12 +386,12 @@ describe('PythonShell', function () {
             }).send('hello').send('world').end(done);
         });
         it('should not be invoked when mode is "binary"', function (done) {
-            let pyshell = new PythonShell('echo_args.py', {
-                args: ['hello', 'world'],
+            let pyshell = new PythonShell('stderrLogging.py', {
                 mode: 'binary'
             });
             pyshell.receiveStderr = function () {
-                throw new Error('should not emit stderr in binary mode');
+                done('should not emit stderr in binary mode');
+                return undefined
             };
             pyshell.end(done);
         });
