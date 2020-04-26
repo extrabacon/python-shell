@@ -155,7 +155,9 @@ export class PythonShell extends EventEmitter{
                 errorData += ''+data;
                 self.receiveStderr(data);
             });
+        }
 
+        if (this.stderr) {
             this.stderr.on('end', function(){
                 self.stderrHasEnded = true;
                 terminateIfNeeded();
