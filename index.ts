@@ -151,13 +151,13 @@ export class PythonShell extends EventEmitter{
 
         // listen to stderr and emit errors for incoming data
         if (this.stderrParser && this.stderr) {
-            this.stderr.on('data', function (data) {
-                errorData += ''+data;
-                self.receiveStderr(data);
-            });
+            this.stderr.on('data', this.receiveStderr.bind(this));
         }
 
         if (this.stderr) {
+            this.stderr.on('data', function (data) {
+                errorData += '' + data;
+            });
             this.stderr.on('end', function(){
                 self.stderrHasEnded = true;
                 terminateIfNeeded();
