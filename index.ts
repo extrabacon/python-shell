@@ -416,7 +416,7 @@ export class PythonShell extends EventEmitter{
     };
 
     /**
-     * Closes the stdin stream, which should cause the process to finish its work and close
+     * Sends a kill signal to the process
      * @returns {PythonShell} The same instance for chaining calls
      */
     terminate(signal?:string) {
