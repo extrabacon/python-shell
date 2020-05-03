@@ -420,7 +420,7 @@ export class PythonShell extends EventEmitter{
      * Sends a kill signal to the process
      * @returns {PythonShell} The same instance for chaining calls
      */
-    kill(signal?: string) {
+    kill(signal?: NodeJS.Signals) {
         this.childProcess.kill(signal);
         this.terminated = true;
         return this;
@@ -430,7 +430,7 @@ export class PythonShell extends EventEmitter{
      * Alias for kill.
      * @deprecated
      */
-    terminate(signal?: string) {
+    terminate(signal?: NodeJS.Signals) {
         return this.kill(signal)
     }
 };
