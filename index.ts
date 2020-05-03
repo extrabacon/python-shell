@@ -234,7 +234,6 @@ export class PythonShell extends EventEmitter{
 
     /**
 	 * checks syntax without executing code
-	 * @param {string} code
 	 * @returns {Promise} rejects w/ stderr if syntax failure
 	 */
 	static async checkSyntax(code:string){
