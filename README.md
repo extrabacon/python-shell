@@ -281,9 +281,9 @@ Parses incoming logs from the Python script written via stderr and emits `stderr
 
 Closes the stdin stream, allowing the Python script to finish and exit. The optional callback is invoked when the process is terminated.
 
-#### `.terminate(signal)`
+#### `.kill(signal)`
 
-Terminates the python script, the optional end callback is invoked if specified. A kill signal may be provided by `signal`, if `signal` is not specified SIGTERM is sent.
+Terminates the python script. A kill signal may be provided by `signal`, if `signal` is not specified SIGTERM is sent.
 
 #### event: `message`
 
