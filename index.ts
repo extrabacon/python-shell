@@ -431,6 +431,7 @@ export class PythonShell extends EventEmitter{
      * @deprecated
      */
     terminate(signal?: NodeJS.Signals) {
+        // todo: remove this next breaking release
         return this.kill(signal)
     }
 };
