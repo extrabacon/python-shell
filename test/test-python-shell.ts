@@ -150,6 +150,14 @@ describe('PythonShell', function () {
                 done();
             });
         });
+        it('should run the script and fail with an extended stack trace even when mode is binary', function (done) {
+            PythonShell.run('error.py', {mode: "binary"}, function (err, results) {
+                err.should.be.an.Error;
+                err.exitCode.should.be.exactly(1);
+                err.stack.should.containEql('----- Python Traceback -----');
+                done();
+            });
+        });
         it('should run multiple scripts and fail with an extended stack trace for each of them', function (done) {
             let numberOfTimesToRun = 5;
             for (let i = 0; i < numberOfTimesToRun; i++) {
