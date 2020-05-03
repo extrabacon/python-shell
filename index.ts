@@ -404,7 +404,8 @@ export class PythonShell extends EventEmitter{
     }
 
     /**
-     * Closes the stdin stream, which should cause the process to finish its work and close
+     * Closes the stdin stream. Unless python is listening for stdin in a loop 
+     * this should cause the process to finish its work and close.
      * @returns {PythonShell} The same instance for chaining calls
      */
     end(callback:(err:PythonShellError, exitCode:number,exitSignal:string)=>any) {
