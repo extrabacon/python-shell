@@ -37,6 +37,9 @@ function getRandomInt(){
 }
 
 export interface Options extends SpawnOptions{
+    /**
+     * if binary is enabled message and stderr events will not be emitted
+     */
     mode?: 'text'|'json'|'binary'
     formatter?: (param:string)=>any
     parser?: (param:string)=>any
@@ -147,12 +150,14 @@ export class PythonShell extends EventEmitter{
         }
 
         // listen to stderr and emit errors for incoming data
+        if (this.stderrParser && this.stderr) {
+            this.stderr.on('data', this.receiveStderr.bind(this));
+        }
+
         if (this.stderr) {
             this.stderr.on('data', function (data) {
-                errorData += ''+data;
-                self.receiveStderr(data);
+                errorData += '' + data;
             });
-
             this.stderr.on('end', function(){
                 self.stderrHasEnded = true;
                 terminateIfNeeded();
@@ -229,7 +234,6 @@ export class PythonShell extends EventEmitter{
 
     /**
 	 * checks syntax without executing code
-	 * @param {string} code
 	 * @returns {Promise} rejects w/ stderr if syntax failure
 	 */
 	static async checkSyntax(code:string){
@@ -251,7 +255,6 @@ export class PythonShell extends EventEmitter{
 
 	/**
 	 * checks syntax without executing code
-	 * @param {string} filePath
 	 * @returns {Promise} rejects w/ stderr if syntax failure
 	 */
 	static async checkSyntaxFile(filePath:string){
@@ -343,7 +346,6 @@ export class PythonShell extends EventEmitter{
     /**
      * Sends a message to the Python shell through stdin
      * Override this method to format data to be sent to the Python process
-     * @param {string|Object} data The message to send
      * @returns {PythonShell} The same instance for chaining calls
      */
     send(message:string|Object) {
@@ -399,7 +401,8 @@ export class PythonShell extends EventEmitter{
     }
 
     /**
-     * Closes the stdin stream, which should cause the process to finish its work and close
+     * Closes the stdin stream. Unless python is listening for stdin in a loop 
+     * this should cause the process to finish its work and close.
      * @returns {PythonShell} The same instance for chaining calls
      */
     end(callback:(err:PythonShellError, exitCode:number,exitSignal:string)=>any) {
@@ -411,12 +414,21 @@ export class PythonShell extends EventEmitter{
     };
 
     /**
-     * Closes the stdin stream, which should cause the process to finish its work and close
+     * Sends a kill signal to the process
      * @returns {PythonShell} The same instance for chaining calls
      */
-    terminate(signal?:string) {
+    kill(signal?: NodeJS.Signals) {
         this.childProcess.kill(signal);
         this.terminated = true;
         return this;
     };
+
+    /**
+     * Alias for kill.
+     * @deprecated
+     */
+    terminate(signal?: NodeJS.Signals) {
+        // todo: remove this next breaking release
+        return this.kill(signal)
+    }
 };

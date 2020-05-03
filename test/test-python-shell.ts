@@ -150,6 +150,14 @@ describe('PythonShell', function () {
                 done();
             });
         });
+        it('should run the script and fail with an extended stack trace even when mode is binary', function (done) {
+            PythonShell.run('error.py', {mode: "binary"}, function (err, results) {
+                err.should.be.an.Error;
+                err.exitCode.should.be.exactly(1);
+                err.stack.should.containEql('----- Python Traceback -----');
+                done();
+            });
+        });
         it('should run multiple scripts and fail with an extended stack trace for each of them', function (done) {
             let numberOfTimesToRun = 5;
             for (let i = 0; i < numberOfTimesToRun; i++) {
@@ -348,7 +356,8 @@ describe('PythonShell', function () {
                 mode: 'binary'
             });
             pyshell.receive = function () {
-                throw new Error('should not emit messages in binary mode');
+                done('should not emit messages in binary mode');
+                return undefined
             };
             pyshell.end(done);
         });
@@ -385,12 +394,12 @@ describe('PythonShell', function () {
             }).send('hello').send('world').end(done);
         });
         it('should not be invoked when mode is "binary"', function (done) {
-            let pyshell = new PythonShell('echo_args.py', {
-                args: ['hello', 'world'],
+            let pyshell = new PythonShell('stderrLogging.py', {
                 mode: 'binary'
             });
             pyshell.receiveStderr = function () {
-                throw new Error('should not emit stderr in binary mode');
+                done('should not emit stderr in binary mode');
+                return undefined
             };
             pyshell.end(done);
         });
