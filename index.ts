@@ -348,7 +348,6 @@ export class PythonShell extends EventEmitter{
     /**
      * Sends a message to the Python shell through stdin
      * Override this method to format data to be sent to the Python process
-     * @param {string|Object} data The message to send
      * @returns {PythonShell} The same instance for chaining calls
      */
     send(message:string|Object) {
