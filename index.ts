@@ -284,8 +284,7 @@ export class PythonShell extends EventEmitter{
         return pyshell.on('message', function (message) {
             output.push(message);
         }).end(function (err) {
-            if (err) return callback(err);
-            return callback(null, output.length ? output : null);
+            return callback(err? err : null, output.length ? output : null);
         });
     };
 
