@@ -142,6 +142,13 @@ describe('PythonShell', function () {
                 done();
             });
         });
+        it('should include both output and error', function (done) {
+            PythonShell.run('echo_hi_then_error.py', null, function (err, results) {
+                err.should.be.an.Error;
+                results.should.eql(['hi'])
+                done();
+            });
+        });
         it('should run the script and fail with an extended stack trace', function (done) {
             PythonShell.run('error.py', null, function (err, results) {
                 err.should.be.an.Error;
