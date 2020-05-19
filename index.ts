@@ -277,14 +277,14 @@ export class PythonShell extends EventEmitter{
      * @param  {Function} callback The callback function to invoke with the script results
      * @return {PythonShell}       The PythonShell instance
      */
-    static run(scriptPath:string, options?:Options, callback?:(err?:PythonShellError, output?:any[])=>any) {
+    static run(scriptPath:string, options?:Options, callback?:(output:ReturnType<PythonShell["parser"]>[], err?:PythonShellError, exitCode?: number, exitSignal?: string)=>any) {
         let pyshell = new PythonShell(scriptPath, options);
         let output = [];
 
         return pyshell.on('message', function (message) {
             output.push(message);
-        }).end(function (err) {
-            return callback(err? err : null, output.length ? output : null);
+        }).end(function (err, exitCode, exitSignal) {
+            return callback(output, err? err : null, exitCode, exitSignal);
         });
     };
 
