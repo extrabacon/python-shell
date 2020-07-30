@@ -6,6 +6,7 @@ import { Readable, Writable } from 'stream'
 import { writeFile, writeFileSync } from 'fs';
 import { promisify } from 'util';
 
+
 function toArray<T>(source?:T|T[]):T[] {
     if (typeof source === 'undefined' || source === null) {
         return [];
@@ -135,7 +136,7 @@ export class PythonShell extends EventEmitter{
         this.mode = options.mode || 'text';
         this.formatter = resolve('format', options.formatter || this.mode);
         this.parser = resolve('parse', options.parser || this.mode);
-        this.stderrParser = resolve('parse', options.stderrParser || this.mode);
+        this.stderrParser = resolve('parse', options.stderrParser || 'text');
         this.terminated = false;
         this.childProcess = spawn(pythonPath, this.command, options);
 
