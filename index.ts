@@ -6,7 +6,6 @@ import { Readable, Writable } from 'stream'
 import { writeFile, writeFileSync } from 'fs';
 import { promisify } from 'util';
 
-
 function toArray<T>(source?:T|T[]):T[] {
     if (typeof source === 'undefined' || source === null) {
         return [];
