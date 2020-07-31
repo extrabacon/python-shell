@@ -108,6 +108,8 @@ Use `options.mode` to quickly setup how data is sent and received between your N
   * use `json` mode for exchanging JSON fragments
   * use `binary` mode for anything else (data is sent and received as-is)
 
+Stderr always uses text mode.
+
 For more details and examples including Python source code, take a look at the tests.
 
 ### Error Handling and extended stack traces
