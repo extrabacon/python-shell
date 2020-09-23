@@ -104,7 +104,7 @@ Use `.send(message)` to send a message to the Python script. Attach the `message
 
 Use `options.mode` to quickly setup how data is sent and received between your Node and Python applications.
 
-  * use `text` mode for exchanging lines of text
+  * use `text` mode for exchanging lines of text ending with a [newline character](http://hayne.net/MacDev/Notes/unixFAQ.html#endOfLine).
   * use `json` mode for exchanging JSON fragments
   * use `binary` mode for anything else (data is sent and received as-is)
 
