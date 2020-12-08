@@ -170,7 +170,7 @@ Creates an instance of `PythonShell` and starts the Python process
   * `parser`: each line of data (ending with "\n") is parsed with this function and its result is emitted as a message
   * `stderrParser`: each line of logs (ending with "\n") is parsed with this function and its result is emitted as a message
   * `encoding`: the text encoding to apply on the child process streams (default: "utf8")
-  * `pythonPath`: The path where to locate the "python" executable. Default: "python"
+  * `pythonPath`: The path where to locate the "python" executable. Default: "python3" ("py" for Windows)
   * `pythonOptions`: Array of option switches to pass to "python"
   * `scriptPath`: The default path where to look for scripts. Default is the current working directory.
   * `args`: Array of arguments to pass to the script
