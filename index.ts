@@ -236,10 +236,10 @@ export class PythonShell extends EventEmitter{
     };
 
     /**
-	 * checks syntax without executing code
-	 * @returns rejects promise w/ string error output if syntax failure
-	 */
-	static async checkSyntax(code:string){
+     * checks syntax without executing code
+     * @returns rejects promise w/ string error output if syntax failure
+     */
+    static async checkSyntax(code:string){
         const randomInt = getRandomInt();
         const filePath = tmpdir() + sep + `pythonShellSyntaxCheck${randomInt}.py`
 
@@ -247,21 +247,21 @@ export class PythonShell extends EventEmitter{
         return writeFilePromise(filePath, code).then(()=>{
             return this.checkSyntaxFile(filePath)
         })
-	}
-
-    static getPythonPath(){	
-        return this.defaultOptions.pythonPath ? this.defaultOptions.pythonPath : this.defaultPythonPath;	
     }
 
-	/**
-	 * checks syntax without executing code
-	 * @returns {Promise} rejects w/ stderr if syntax failure
-	 */
-	static async checkSyntaxFile(filePath:string){
+    static getPythonPath(){
+        return this.defaultOptions.pythonPath ? this.defaultOptions.pythonPath : this.defaultPythonPath;    
+    }
+
+    /**
+     * checks syntax without executing code
+     * @returns {Promise} rejects w/ stderr if syntax failure
+     */
+    static async checkSyntaxFile(filePath:string){
         const pythonPath = this.getPythonPath()
-	    let compileCommand = `${pythonPath} -m py_compile ${filePath}`
+        let compileCommand = `${pythonPath} -m py_compile ${filePath}`
         return execPromise(compileCommand)
-	}
+    }
 
     /**
      * Runs a Python script and returns collected messages
