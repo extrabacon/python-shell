@@ -249,12 +249,17 @@ export class PythonShell extends EventEmitter{
         })
 	}
 
+    static getPythonPath(){	
+        return this.defaultOptions.pythonPath ? this.defaultOptions.pythonPath : this.defaultPythonPath;	
+    }
+
 	/**
 	 * checks syntax without executing code
 	 * @returns {Promise} rejects w/ stderr if syntax failure
 	 */
 	static async checkSyntaxFile(filePath:string){
-	    let compileCommand = `${this.defaultPythonPath} -m py_compile ${filePath}`
+        const pythonPath = this.getPythonPath()
+	    let compileCommand = `${pythonPath} -m py_compile ${filePath}`
         return execPromise(compileCommand)
 	}
 
@@ -294,12 +299,12 @@ export class PythonShell extends EventEmitter{
     };
 
     static getVersion(pythonPath?:string){
-        if(!pythonPath) pythonPath = this.defaultPythonPath
+        if(!pythonPath) pythonPath = this.getPythonPath()
         return execPromise(pythonPath + " --version");
     }
 
     static getVersionSync(pythonPath?:string){
-        if(!pythonPath) pythonPath = this.defaultPythonPath
+        if(!pythonPath) pythonPath = this.getPythonPath()
         return execSync(pythonPath + " --version").toString()
     }
 
