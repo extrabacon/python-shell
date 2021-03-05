@@ -93,7 +93,7 @@ export class PythonShell extends EventEmitter {
     private _endCallback: (err: PythonShellError, exitCode: number, exitSignal: string) => any
 
     // starting 2020 python2 is deprecated so we choose 3 as default
-    static defaultPythonPath = process.platform != "win32" ? "python3" : "py";
+    static defaultPythonPath = process.platform != "win32" ? "python3" : "python";
 
     static defaultOptions: Options = {}; //allow global overrides for options
 
