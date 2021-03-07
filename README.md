@@ -1,6 +1,6 @@
 # [python-shell](https://www.npmjs.com/package/python-shell) [![Build status](https://ci.appveyor.com/api/projects/status/m8e3h53vvxg5wb2q/branch/master?svg=true)](https://ci.appveyor.com/project/Almenon/python-shell/branch/master) [![codecov](https://codecov.io/gh/extrabacon/python-shell/branch/master/graph/badge.svg)](https://codecov.io/gh/extrabacon/python-shell)
 
-<!-- chage above url accroding to repo -->
+<!-- change above url according to repo -->
 A simple way to run Python scripts from Node.js with basic but efficient inter-process communication and better error handling.
 
 ## Features
@@ -11,15 +11,13 @@ A simple way to run Python scripts from Node.js with basic but efficient inter-p
 + Simple and efficient data transfers through stdin and stdout streams
 + Extended stack traces when an error is thrown
 
+## Requirements
+First make sure you are able to run `python3` (Mac/Linux) or `python` (Windows) from the terminal. If you are not then you might need to add it to the PATH. If you want to use a version of python not in the PATH you should specify `options.pythonPath`.
+
 ## Installation
 
 ```bash
 npm install python-shell
-```
-
-To run the tests:
-```bash
-npm test
 ```
 
 ## Documentation
@@ -170,7 +168,7 @@ Creates an instance of `PythonShell` and starts the Python process
   * `parser`: each line of data (ending with "\n") is parsed with this function and its result is emitted as a message
   * `stderrParser`: each line of logs (ending with "\n") is parsed with this function and its result is emitted as a message
   * `encoding`: the text encoding to apply on the child process streams (default: "utf8")
-  * `pythonPath`: The path where to locate the "python" executable. Default: "python3" ("py" for Windows)
+  * `pythonPath`: The path where to locate the "python" executable. Default: "python3" ("python" for Windows)
   * `pythonOptions`: Array of option switches to pass to "python"
   * `scriptPath`: The default path where to look for scripts. Default is the current working directory.
   * `args`: Array of arguments to pass to the script
