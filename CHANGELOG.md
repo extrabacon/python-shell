@@ -1,3 +1,11 @@
+## [3.0.0] - 2021-03-07
+### Changed
+- **BREAKING** Default python path changed back to `python` on Windows. #237
+- **BREAKING** `error` event renamed to `pythonError` event
+
+### Added
+- `error` event that is fired upon failure to launch process, among other things #118
+
 ## [1.0.8]
 ### Fixed
 - @joaoe fixed a bug with pythonshell not working with unset std streams
