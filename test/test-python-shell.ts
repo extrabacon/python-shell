@@ -55,6 +55,15 @@ describe('PythonShell', function () {
             pyshell.command.should.eql(['-u', 'test' + sep + 'python' + sep + 'exit-code.py']);
             pyshell.end(done);
         });
+        it('should fail to spawn python with bad path', function (done) {
+            let pyshell = new PythonShell('exit-code.py', {
+                pythonPath: 'foeisjofseij'
+            }, );
+            pyshell.on('error', (err: NodeJS.ErrnoException)=>{
+                err.code.should.eql('ENOENT')
+                done()
+            })
+        });
         it('should spawn a Python process with script arguments', function (done) {
             let pyshell = new PythonShell('echo_args.py', {
                 args: ['hello', 'world']
