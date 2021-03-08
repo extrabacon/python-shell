@@ -62,7 +62,7 @@ export interface Options extends SpawnOptions {
     args?: string[]
 }
 
-export class PythonShellError extends Error {
+export class PythonError extends Error {
     traceback: string | Buffer;
     exitCode?: number;
 }
@@ -90,7 +90,7 @@ export class PythonShell extends EventEmitter {
     private stderrHasEnded: boolean;
     private stdoutHasEnded: boolean;
     private _remaining: string
-    private _endCallback: (err: PythonShellError, exitCode: number, exitSignal: string) => any
+    private _endCallback: (err: PythonError, exitCode: number, exitSignal: string) => any
 
     // starting 2020 python2 is deprecated so we choose 3 as default
     static defaultPythonPath = process.platform != "win32" ? "python3" : "python";
@@ -178,6 +178,9 @@ export class PythonShell extends EventEmitter {
             self.stdoutHasEnded = true;
         }
 
+        this.childProcess.on('error', function(err: NodeJS.ErrnoException){
+            self.emit('error', err);
+        })
         this.childProcess.on('exit', function (code, signal) {
             self.exitCode = code;
             self.exitSignal = signal;
@@ -187,14 +190,14 @@ export class PythonShell extends EventEmitter {
         function terminateIfNeeded() {
             if (!self.stderrHasEnded || !self.stdoutHasEnded || (self.exitCode == null && self.exitSignal == null)) return;
 
-            let err: PythonShellError;
+            let err: PythonError;
             if (self.exitCode && self.exitCode !== 0) {
                 if (errorData) {
                     err = self.parseError(errorData);
                 } else {
-                    err = new PythonShellError('process exited with code ' + self.exitCode);
+                    err = new PythonError('process exited with code ' + self.exitCode);
                 }
-                err = <PythonShellError>extend(err, {
+                err = <PythonError>extend(err, {
                     executable: pythonPath,
                     options: pythonOptions.length ? pythonOptions : null,
                     script: self.scriptPath,
@@ -202,8 +205,8 @@ export class PythonShell extends EventEmitter {
                     exitCode: self.exitCode
                 });
                 // do not emit error if only a callback is used
-                if (self.listeners('error').length || !self._endCallback) {
-                    self.emit('error', err);
+                if (self.listeners('pythonError').length || !self._endCallback) {
+                    self.emit('pythonError', err);
                 }
             }
 
@@ -270,7 +273,7 @@ export class PythonShell extends EventEmitter {
      * @param  {Function} callback The callback function to invoke with the script results
      * @return {PythonShell}       The PythonShell instance
      */
-    static run(scriptPath: string, options?: Options, callback?: (err?: PythonShellError, output?: any[]) => any) {
+    static run(scriptPath: string, options?: Options, callback?: (err?: PythonError, output?: any[]) => any) {
         let pyshell = new PythonShell(scriptPath, options);
         let output = [];
 
@@ -288,7 +291,7 @@ export class PythonShell extends EventEmitter {
      * @param  {Function} callback The callback function to invoke with the script results
      * @return {PythonShell}       The PythonShell instance
      */
-    static runString(code: string, options?: Options, callback?: (err: PythonShellError, output?: any[]) => any) {
+    static runString(code: string, options?: Options, callback?: (err: PythonError, output?: any[]) => any) {
 
         // put code in temp file
         const randomInt = getRandomInt();
@@ -315,20 +318,20 @@ export class PythonShell extends EventEmitter {
      */
     private parseError(data: string | Buffer) {
         let text = '' + data;
-        let error: PythonShellError;
+        let error: PythonError;
 
         if (/^Traceback/.test(text)) {
             // traceback data is available
             let lines = text.trim().split(newline);
             let exception = lines.pop();
-            error = new PythonShellError(exception);
+            error = new PythonError(exception);
             error.traceback = data;
             // extend stack trace
             error.stack += newline + '    ----- Python Traceback -----' + newline + '  ';
             error.stack += lines.slice(1).join(newline + '  ');
         } else {
             // otherwise, create a simpler error with stderr contents
-            error = new PythonShellError(text);
+            error = new PythonError(text);
         }
 
         return error;
@@ -396,7 +399,7 @@ export class PythonShell extends EventEmitter {
      * this should cause the process to finish its work and close.
      * @returns {PythonShell} The same instance for chaining calls
      */
-    end(callback: (err: PythonShellError, exitCode: number, exitSignal: string) => any) {
+    end(callback: (err: PythonError, exitCode: number, exitSignal: string) => any) {
         if (this.childProcess.stdin) {
             this.childProcess.stdin.end();
         }
@@ -454,10 +457,17 @@ export interface PythonShell {
     prependListener(event: "close", listener: () => void): this;
     prependOnceListener(event: "close", listener: () => void): this;
 
-    addListener(event: "error", listener: (error: PythonShellError) => void): this;
-    emit(event: "error", error: PythonShellError): boolean;
-    on(event: "error", listener: (error: PythonShellError) => void): this;
-    once(event: "error", listener: (error: PythonShellError) => void): this;
-    prependListener(event: "error", listener: (error: PythonShellError) => void): this;
-    prependOnceListener(event: "error", listener: (error: PythonShellError) => void): this;
+    addListener(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
+    emit(event: "error", error: NodeJS.ErrnoException): boolean;
+    on(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
+    once(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
+    prependListener(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
+    prependOnceListener(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
+
+    addListener(event: "pythonError", listener: (error: PythonError) => void): this;
+    emit(event: "pythonError", error: PythonError): boolean;
+    on(event: "pythonError", listener: (error: PythonError) => void): this;
+    once(event: "pythonError", listener: (error: PythonError) => void): this;
+    prependListener(event: "pythonError", listener: (error: PythonError) => void): this;
+    prependOnceListener(event: "pythonError", listener: (error: PythonError) => void): this;
 }

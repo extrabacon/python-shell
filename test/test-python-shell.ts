@@ -59,7 +59,7 @@ describe('PythonShell', function () {
             let pyshell = new PythonShell('exit-code.py', {
                 pythonPath: 'foeisjofseij'
             }, );
-            pyshell.on('error', (err: NodeJS.ErrnoException)=>{
+            pyshell.on('error', (err)=>{
                 err.code.should.eql('ENOENT')
                 done()
             })
@@ -450,7 +450,7 @@ describe('PythonShell', function () {
             let pyshell = new PythonShell('exit-code.py', {
                 args: ['3']
             });
-            pyshell.on('error', function (err) {
+            pyshell.on('pythonError', function (err) {
                 err.should.have.properties({
                     message: 'process exited with code 3',
                     exitCode: 3
@@ -460,7 +460,7 @@ describe('PythonShell', function () {
         });
         it('should emit error when the program exits because of an unhandled exception', function (done) {
             let pyshell = new PythonShell('error.py');
-            pyshell.on('error', function (err) {
+            pyshell.on('pythonError', function (err) {
                 err.message.should.be.equalOneOf('ZeroDivisionError: integer division or modulo by zero','ZeroDivisionError: division by zero');
                 err.should.have.property('traceback');
                 err.traceback.should.containEql('Traceback (most recent call last)');
@@ -469,7 +469,7 @@ describe('PythonShell', function () {
         });
         it('should NOT emit error when logging is written to stderr', function (done) {
             let pyshell = new PythonShell('stderrLogging.py');
-            pyshell.on('error', function (err) {
+            pyshell.on('pythonError', function (err) {
                 done(new Error("an error should not have been raised"));
             });
             pyshell.on('close', function(){
@@ -483,14 +483,14 @@ describe('PythonShell', function () {
             let pyshell = new PythonShell('exit-code.py', {
                 args: ['1']
             });
-            pyshell.on('error', function (err) {
+            pyshell.on('pythonError', function (err) {
                 err.should.have.properties(['exitCode', 'script', 'options', 'args']);
                 done();
             });
         });
         it('should extend err.stack with traceback', function (done) {
             let pyshell = new PythonShell('error.py');
-            pyshell.on('error', function (err) {
+            pyshell.on('pythonError', function (err) {
                 err.stack.should.containEql('----- Python Traceback -----');
                 err.stack.should.containEql('File "test' + sep + 'python' + sep + 'error.py", line 4');
                 err.stack.should.containEql('File "test' + sep + 'python' + sep + 'error.py", line 6');

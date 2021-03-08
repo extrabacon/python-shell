@@ -323,9 +323,18 @@ shell.on('stderr', function (stderr) {
 
 Fires when the process has been terminated, with an error or not.
 
-#### event: `error`
+#### event: `pythonError`
 
 Fires when the process terminates with a non-zero exit code.
+
+#### event: `error`
+
+Fires when:
+* The process could not be spawned, or
+* The process could not be killed, or
+* Sending a message to the child process failed.
+
+If the process could not be spawned please double-check that python can be launched from the terminal.
 
 ## Used By:
 
