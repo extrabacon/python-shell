@@ -1,10 +1,10 @@
 ## [3.0.0] - 2021-03-07
 ### Changed
-- **BREAKING** Default python path changed back to `python` on Windows. #237
-- **BREAKING** `error` event renamed to `pythonError` event
+- **BREAKING** Default python path changed back to `python` on Windows. [#237](https://github.com/extrabacon/python-shell/issues/237)
+- **BREAKING** `error` event renamed to `pythonError` event. [#118](https://github.com/extrabacon/python-shell/issues/118)
 
 ### Added
-- `error` event that is fired upon failure to launch process, among other things #118
+- `error` event that is fired upon failure to launch process, among other things. [#118](https://github.com/extrabacon/python-shell/issues/118)
 
 ## [1.0.8]
 ### Fixed
