@@ -62,7 +62,7 @@ export interface Options extends SpawnOptions {
     args?: string[]
 }
 
-export class PythonError extends Error {
+export class PythonShellError extends Error {
     traceback: string | Buffer;
     exitCode?: number;
 }
@@ -90,7 +90,7 @@ export class PythonShell extends EventEmitter {
     private stderrHasEnded: boolean;
     private stdoutHasEnded: boolean;
     private _remaining: string
-    private _endCallback: (err: PythonError, exitCode: number, exitSignal: string) => any
+    private _endCallback: (err: PythonShellError, exitCode: number, exitSignal: string) => any
 
     // starting 2020 python2 is deprecated so we choose 3 as default
     static defaultPythonPath = process.platform != "win32" ? "python3" : "python";
@@ -190,14 +190,14 @@ export class PythonShell extends EventEmitter {
         function terminateIfNeeded() {
             if (!self.stderrHasEnded || !self.stdoutHasEnded || (self.exitCode == null && self.exitSignal == null)) return;
 
-            let err: PythonError;
+            let err: PythonShellError;
             if (self.exitCode && self.exitCode !== 0) {
                 if (errorData) {
                     err = self.parseError(errorData);
                 } else {
-                    err = new PythonError('process exited with code ' + self.exitCode);
+                    err = new PythonShellError('process exited with code ' + self.exitCode);
                 }
-                err = <PythonError>extend(err, {
+                err = <PythonShellError>extend(err, {
                     executable: pythonPath,
                     options: pythonOptions.length ? pythonOptions : null,
                     script: self.scriptPath,
@@ -273,7 +273,7 @@ export class PythonShell extends EventEmitter {
      * @param  {Function} callback The callback function to invoke with the script results
      * @return {PythonShell}       The PythonShell instance
      */
-    static run(scriptPath: string, options?: Options, callback?: (err?: PythonError, output?: any[]) => any) {
+    static run(scriptPath: string, options?: Options, callback?: (err?: PythonShellError, output?: any[]) => any) {
         let pyshell = new PythonShell(scriptPath, options);
         let output = [];
 
@@ -291,7 +291,7 @@ export class PythonShell extends EventEmitter {
      * @param  {Function} callback The callback function to invoke with the script results
      * @return {PythonShell}       The PythonShell instance
      */
-    static runString(code: string, options?: Options, callback?: (err: PythonError, output?: any[]) => any) {
+    static runString(code: string, options?: Options, callback?: (err: PythonShellError, output?: any[]) => any) {
 
         // put code in temp file
         const randomInt = getRandomInt();
@@ -318,20 +318,20 @@ export class PythonShell extends EventEmitter {
      */
     private parseError(data: string | Buffer) {
         let text = '' + data;
-        let error: PythonError;
+        let error: PythonShellError;
 
         if (/^Traceback/.test(text)) {
             // traceback data is available
             let lines = text.trim().split(newline);
             let exception = lines.pop();
-            error = new PythonError(exception);
+            error = new PythonShellError(exception);
             error.traceback = data;
             // extend stack trace
             error.stack += newline + '    ----- Python Traceback -----' + newline + '  ';
             error.stack += lines.slice(1).join(newline + '  ');
         } else {
             // otherwise, create a simpler error with stderr contents
-            error = new PythonError(text);
+            error = new PythonShellError(text);
         }
 
         return error;
@@ -399,7 +399,7 @@ export class PythonShell extends EventEmitter {
      * this should cause the process to finish its work and close.
      * @returns {PythonShell} The same instance for chaining calls
      */
-    end(callback: (err: PythonError, exitCode: number, exitSignal: string) => any) {
+    end(callback: (err: PythonShellError, exitCode: number, exitSignal: string) => any) {
         if (this.childProcess.stdin) {
             this.childProcess.stdin.end();
         }
@@ -464,10 +464,10 @@ export interface PythonShell {
     prependListener(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
     prependOnceListener(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
 
-    addListener(event: "pythonError", listener: (error: PythonError) => void): this;
-    emit(event: "pythonError", error: PythonError): boolean;
-    on(event: "pythonError", listener: (error: PythonError) => void): this;
-    once(event: "pythonError", listener: (error: PythonError) => void): this;
-    prependListener(event: "pythonError", listener: (error: PythonError) => void): this;
-    prependOnceListener(event: "pythonError", listener: (error: PythonError) => void): this;
+    addListener(event: "pythonError", listener: (error: PythonShellError) => void): this;
+    emit(event: "pythonError", error: PythonShellError): boolean;
+    on(event: "pythonError", listener: (error: PythonShellError) => void): this;
+    once(event: "pythonError", listener: (error: PythonShellError) => void): this;
+    prependListener(event: "pythonError", listener: (error: PythonShellError) => void): this;
+    prependOnceListener(event: "pythonError", listener: (error: PythonShellError) => void): this;
 }
