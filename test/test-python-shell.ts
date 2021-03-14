@@ -364,7 +364,7 @@ describe('PythonShell', function () {
             pyshell.on('message', function (message) {
                 message.should.be.an.Object;
                 message.should.eql({ a: true });
-            }).receive('{"a"').receive(':').receive('true}' + newline + '').end(done);
+            }).receive('{"a"').receive(':').receive('true}' + newline + '{').receive('"a":true}' + newline).end(done);
         });
         it('should not be invoked when mode is "binary"', function (done) {
             let pyshell = new PythonShell('echo_args.py', {
