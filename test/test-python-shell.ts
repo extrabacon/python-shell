@@ -1,7 +1,7 @@
 import * as should from 'should';
-import {PythonShell} from '..'
-import {sep, join} from 'path'
-import {EOL as newline} from 'os'
+import { PythonShell } from '..'
+import { sep, join } from 'path'
+import { EOL as newline } from 'os'
 import { chdir, cwd } from 'process';
 
 describe('PythonShell', function () {
@@ -58,8 +58,8 @@ describe('PythonShell', function () {
         it('should fail to spawn python with bad path', function (done) {
             let pyshell = new PythonShell('exit-code.py', {
                 pythonPath: 'foeisjofseij'
-            }, );
-            pyshell.on('error', (err)=>{
+            });
+            pyshell.on('error', (err) => {
                 err.code.should.eql('ENOENT')
                 done()
             })
@@ -78,14 +78,14 @@ describe('PythonShell', function () {
         // note checkSyntax is a wrapper around checkSyntaxFile
         // so this tests checkSyntaxFile as well
 
-        it('should check syntax', function ( done) {
-            PythonShell.checkSyntax("x=1").then(()=>{
+        it('should check syntax', function (done) {
+            PythonShell.checkSyntax("x=1").then(() => {
                 done();
             })
         })
 
-        it('should invalidate bad syntax', function ( done) {
-            PythonShell.checkSyntax("x=").catch(()=>{
+        it('should invalidate bad syntax', function (done) {
+            PythonShell.checkSyntax("x=").catch(() => {
                 done();
             })
         })
@@ -114,7 +114,7 @@ describe('PythonShell', function () {
     // })
 
     describe('#runString(script, options)', function () {
-        before(()=>{
+        before(() => {
             PythonShell.defaultOptions = {};
         })
         it('should be able to execute a string of python code', function (done) {
@@ -125,7 +125,7 @@ describe('PythonShell', function () {
                 done();
             });
         });
-        after(()=>{
+        after(() => {
             PythonShell.defaultOptions = {
                 // reset to match initial value
                 scriptPath: pythonFolder
@@ -167,7 +167,7 @@ describe('PythonShell', function () {
             });
         });
         it('should run the script and fail with an extended stack trace even when mode is binary', function (done) {
-            PythonShell.run('error.py', {mode: "binary"}, function (err, results) {
+            PythonShell.run('error.py', { mode: "binary" }, function (err, results) {
                 err.should.be.an.Error;
                 err.exitCode.should.be.exactly(1);
                 err.stack.should.containEql('----- Python Traceback -----');
@@ -183,7 +183,7 @@ describe('PythonShell', function () {
             function end() {
                 count++;
                 if (count === numberOfTimesToRun) {
-                  done();
+                    done();
                 }
             }
             function runSingleErrorScript(callback) {
@@ -205,7 +205,7 @@ describe('PythonShell', function () {
             function end() {
                 count++;
                 if (count === numberOfTimesToRun) {
-                  done();
+                    done();
                 }
             }
             function runSingleScript(callback) {
@@ -220,10 +220,10 @@ describe('PythonShell', function () {
             }
 
         });
-        
-        it('should be able to run modules', function(done){
+
+        it('should be able to run modules', function (done) {
             PythonShell.defaultOptions = {};
-            
+
             PythonShell.run('-m', {
                 args: ['timeit', '-n 1', `'x=5'`]
             }, function (err, results) {
@@ -236,12 +236,12 @@ describe('PythonShell', function () {
                 if (err) return done(err);
                 results.should.be.an.Array();
                 results[0].should.be.an.String();
-                results[0].slice(0,6).should.eql('1 loop');
+                results[0].slice(0, 6).should.eql('1 loop');
                 done();
             });
         })
 
-        after(()=>{
+        after(() => {
             // should be able to run modules test should theoretically reset this
             // but we have this to in case something goes horribly wrong with the test
             PythonShell.defaultOptions = {
@@ -263,7 +263,7 @@ describe('PythonShell', function () {
             should(pyshell.stdin).be.eql(null);
             should(pyshell.stdout).be.eql(null);
             should(pyshell.stderr).be.eql(null);
-            should.throws(() => {pyshell.send("asd")});
+            should.throws(() => { pyshell.send("asd") });
         });
     });
 
@@ -274,11 +274,11 @@ describe('PythonShell', function () {
             });
             let output = '';
             pyshell.stdout.on('data', function (data) {
-                output += ''+data;
+                output += '' + data;
             });
             pyshell.send('hello').send('world').end(function (err) {
                 if (err) return done(err);
-                output.should.be.exactly('hello'+newline+'world'+newline);
+                output.should.be.exactly('hello' + newline + 'world' + newline);
                 done();
             });
         });
@@ -288,11 +288,11 @@ describe('PythonShell', function () {
             });
             let output = '';
             pyshell.stdout.on('data', function (data) {
-                output += ''+data;
+                output += '' + data;
             });
             pyshell.send({ a: 'b' }).send(null).send([1, 2, 3]).end(function (err) {
                 if (err) return done(err);
-                output.should.be.exactly('{"a": "b"}'+newline+'null'+newline+'[1, 2, 3]'+newline);
+                output.should.be.exactly('{"a": "b"}' + newline + 'null' + newline + '[1, 2, 3]' + newline);
                 done();
             });
         });
@@ -304,11 +304,11 @@ describe('PythonShell', function () {
             });
             let output = '';
             pyshell.stdout.on('data', function (data) {
-                output += ''+data;
+                output += '' + data;
             });
             pyshell.send('hello').send('world').end(function (err) {
                 if (err) return done(err);
-                output.should.be.exactly('HELLO'+newline+'WORLD'+newline+'');
+                output.should.be.exactly('HELLO' + newline + 'WORLD' + newline + '');
                 done();
             });
         });
@@ -318,9 +318,9 @@ describe('PythonShell', function () {
             });
             let output = '';
             pyshell.stdout.on('data', function (data) {
-                output += ''+data;
+                output += '' + data;
             });
-            pyshell.send(new Buffer('i am not a string')).end(function (err) {
+            pyshell.send(Buffer.from('i am not a string')).end(function (err) {
                 if (err) return done(err);
                 output.should.be.exactly('i am not a string');
                 done();
@@ -364,7 +364,7 @@ describe('PythonShell', function () {
             pyshell.on('message', function (message) {
                 message.should.be.an.Object;
                 message.should.eql({ a: true });
-            }).receive('{"a"').receive(':').receive('true}'+newline+'').end(done);
+            }).receive('{"a"').receive(':').receive('true}' + newline + '').end(done);
         });
         it('should not be invoked when mode is "binary"', function (done) {
             let pyshell = new PythonShell('echo_args.py', {
@@ -440,7 +440,7 @@ describe('PythonShell', function () {
     describe('.end(callback)', function () {
         it('should end normally when exit code is zero', function (done) {
             let pyshell = new PythonShell('exit-code.py');
-            pyshell.end(function (err,code,signal) {
+            pyshell.end(function (err, code, signal) {
                 if (err) return done(err);
                 code.should.be.exactly(0);
                 done();
@@ -461,7 +461,7 @@ describe('PythonShell', function () {
         it('should emit error when the program exits because of an unhandled exception', function (done) {
             let pyshell = new PythonShell('error.py');
             pyshell.on('pythonError', function (err) {
-                err.message.should.be.equalOneOf('ZeroDivisionError: integer division or modulo by zero','ZeroDivisionError: division by zero');
+                err.message.should.be.equalOneOf('ZeroDivisionError: integer division or modulo by zero', 'ZeroDivisionError: division by zero');
                 err.should.have.property('traceback');
                 err.traceback.should.containEql('Traceback (most recent call last)');
                 done();
@@ -472,7 +472,7 @@ describe('PythonShell', function () {
             pyshell.on('pythonError', function (err) {
                 done(new Error("an error should not have been raised"));
             });
-            pyshell.on('close', function(){
+            pyshell.on('close', function () {
                 done();
             })
         });
@@ -509,7 +509,7 @@ describe('PythonShell', function () {
         it('run the end callback if specified', function (done) {
             let pyshell = new PythonShell('infinite_loop.py');
             let endCalled = false;
-            pyshell.end(()=>{
+            pyshell.end(() => {
                 endCalled = true;
             })
             pyshell.terminate();
@@ -519,12 +519,12 @@ describe('PythonShell', function () {
         it('terminate with correct kill signal', function (done) {
             let pyshell = new PythonShell('infinite_loop.py');
             let endCalled = false;
-            pyshell.end(()=>{
+            pyshell.end(() => {
                 endCalled = true;
             })
             pyshell.terminate('SIGKILL');
             pyshell.terminated.should.be.true;
-            setTimeout(()=>{pyshell.exitSignal.should.be.exactly('SIGKILL');},500);
+            setTimeout(() => { pyshell.exitSignal.should.be.exactly('SIGKILL'); }, 500);
             done();
         });
     });
