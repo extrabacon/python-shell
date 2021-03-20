@@ -5,6 +5,7 @@ import { join, sep } from 'path'
 import { Readable, Writable } from 'stream'
 import { writeFile, writeFileSync } from 'fs';
 import { promisify } from 'util';
+const LineTransformStream = require('line-transform-stream')
 
 function toArray<T>(source?: T | T[]): T[] {
     if (typeof source === 'undefined' || source === null) {
@@ -147,14 +148,19 @@ export class PythonShell extends EventEmitter {
             self.parser && self[name] && self[name].setEncoding(options.encoding || 'utf8');
         });
 
-        // parse incoming data on stdout
+        // Node buffers stdout&stderr in batches regardless of newline placement
+        // This is troublesome if you want to recieve distinct individual messages
+        // for example JSON parsing breaks if it recieves partial JSON
+        // so we use LineTransformStream to emit each batch seperated by newline
         if (this.parser && this.stdout) {
-            this.stdout.on('data', this.receive.bind(this));
+            this.stdout.pipe(new LineTransformStream((data) => {
+                this.emit('message', self.parser(data));
+            }))
         }
-
-        // listen to stderr and emit errors for incoming data
         if (this.stderrParser && this.stderr) {
-            this.stderr.on('data', this.receiveStderr.bind(this));
+            this.stdout.pipe(new LineTransformStream((data) => {
+                this.emit('stderr', self.stderrParser(data));
+            }))
         }
 
         if (this.stderr) {
@@ -178,7 +184,7 @@ export class PythonShell extends EventEmitter {
             self.stdoutHasEnded = true;
         }
 
-        this.childProcess.on('error', function(err: NodeJS.ErrnoException){
+        this.childProcess.on('error', function (err: NodeJS.ErrnoException) {
             self.emit('error', err);
         })
         this.childProcess.on('exit', function (code, signal) {
@@ -349,50 +355,6 @@ export class PythonShell extends EventEmitter {
         this.stdin.write(data);
         return this;
     };
-
-    /**
-     * Parses data received from the Python shell stdout stream and emits "message" events
-     * This method is not used in binary mode
-     * Override this method to parse incoming data from the Python process into messages
-     * @param {string|Buffer} data The data to parse into messages
-     */
-    receive(data: string | Buffer) {
-        return this.receiveInternal(data, 'message');
-    };
-
-    /**
-     * Parses data received from the Python shell stderr stream and emits "stderr" events
-     * This method is not used in binary mode
-     * Override this method to parse incoming logs from the Python process into messages
-     * @param {string|Buffer} data The data to parse into messages
-     */
-    receiveStderr(data: string | Buffer) {
-        return this.receiveInternal(data, 'stderr');
-    };
-
-    private receiveInternal(data: string | Buffer, emitType: 'message' | 'stderr') {
-        let self = this;
-        let parts = ('' + data).split(newline);
-
-        if (parts.length === 1) {
-            // an incomplete record, keep buffering
-            this._remaining = (this._remaining || '') + parts[0];
-            return this;
-        }
-
-        let lastLine = parts.pop();
-        // fix the first line with the remaining from the previous iteration of 'receive'
-        parts[0] = (this._remaining || '') + parts[0];
-        // keep the remaining for the next iteration of 'receive'
-        this._remaining = lastLine;
-
-        parts.forEach(function (part) {
-            if (emitType == 'message') self.emit(emitType, self.parser(part));
-            else if (emitType == 'stderr') self.emit(emitType, self.stderrParser(part));
-        });
-
-        return this;
-    }
 
     /**
      * Closes the stdin stream. Unless python is listening for stdin in a loop 

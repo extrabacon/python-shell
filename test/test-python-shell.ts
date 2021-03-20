@@ -358,13 +358,17 @@ describe('PythonShell', function () {
             }).end(done);
         });
         it('should properly buffer partial messages', function (done) {
-            let pyshell = new PythonShell('echo_json.py', {
+            let pyshell = new PythonShell('echo_text.py', {
                 mode: 'json'
             });
-            pyshell.on('message', function (message) {
+            pyshell.on('message', (message) => {
+                console.log(message)
                 message.should.be.an.Object;
                 message.should.eql({ a: true });
-            }).receive('{"a"').receive(':').receive('true}' + newline + '{').receive('"a":true}' + newline).end(done);
+            }).send('{"a"').send(':').send('true}' + newline + '{').send('"a":true}' + newline).end(() => {
+                console.log('done called')
+                done()
+            });
         });
         it('should not be invoked when mode is "binary"', function (done) {
             let pyshell = new PythonShell('echo_args.py', {
