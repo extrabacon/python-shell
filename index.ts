@@ -158,7 +158,7 @@ export class PythonShell extends EventEmitter {
             }))
         }
         if (this.stderrParser && this.stderr) {
-            this.stdout.pipe(new LineTransformStream((data) => {
+            this.stderr.pipe(new LineTransformStream((data) => {
                 this.emit('stderr', self.stderrParser(data));
             }))
         }
