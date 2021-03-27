@@ -1,12 +1,12 @@
 import { EventEmitter } from 'events';
 import { ChildProcess, spawn, SpawnOptions, exec, execSync } from 'child_process';
-import { EOL as newline, tmpdir} from 'os';
+import { EOL as newline, tmpdir } from 'os';
 import { join, sep } from 'path'
-import { Readable, Writable } from 'stream'
+import { Readable, Transform, TransformCallback, Writable } from 'stream'
 import { writeFile, writeFileSync } from 'fs';
 import { promisify } from 'util';
 
-function toArray<T>(source?:T|T[]):T[] {
+function toArray<T>(source?: T | T[]): T[] {
     if (typeof source === 'undefined' || source === null) {
         return [];
     } else if (!Array.isArray(source)) {
@@ -18,7 +18,7 @@ function toArray<T>(source?:T|T[]):T[] {
 /**
  * adds arguments as properties to obj
  */
-function extend(obj:{}, ...args) {
+function extend(obj: {}, ...args) {
     Array.prototype.slice.call(arguments, 1).forEach(function (source) {
         if (source) {
             for (let key in source) {
@@ -32,18 +32,20 @@ function extend(obj:{}, ...args) {
 /**
  * gets a random int from 0-10000000000
  */
-function getRandomInt(){
-    return Math.floor(Math.random()*10000000000);
+function getRandomInt() {
+    return Math.floor(Math.random() * 10000000000);
 }
 
-export interface Options extends SpawnOptions{
+const execPromise = promisify(exec)
+
+export interface Options extends SpawnOptions {
     /**
      * if binary is enabled message and stderr events will not be emitted
      */
-    mode?: 'text'|'json'|'binary'
-    formatter?: (param:string)=>any
-    parser?: (param:string)=>any
-    stderrParser?: (param:string)=>any
+    mode?: 'text' | 'json' | 'binary'
+    formatter?: string | ((param: string) => any)
+    parser?: string | ((param: string) => any)
+    stderrParser?: string | ((param: string) => any)
     encoding?: string
     pythonPath?: string
     /**
@@ -60,53 +62,79 @@ export interface Options extends SpawnOptions{
     args?: string[]
 }
 
-export class PythonShellError extends Error{
+export class PythonShellError extends Error {
     traceback: string | Buffer;
-    exitCode?:number;
+    exitCode?: number;
+}
+
+/**
+ * Takes in a string stream and emits batches seperated by newlines
+ */
+export class NewlineTransformer extends Transform {
+    // NewlineTransformer: Megatron's little known once-removed cousin
+    private _lastLineData: string;
+    _transform(chunk: any, encoding: string, callback: TransformCallback){
+        let data: string = chunk.toString()
+        if (this._lastLineData) data = this._lastLineData + data
+        const lines = data.split(newline)
+        this._lastLineData = lines.pop()
+        //@ts-ignore this works, node ignores the encoding if it's a number
+        lines.forEach(this.push.bind(this))
+        callback()
+    }
+    _flush(done: TransformCallback){
+        if (this._lastLineData) this.push(this._lastLineData)
+        this._lastLineData = null;
+        done()
+    }
 }
 
 /**
  * An interactive Python shell exchanging data through stdio
  * @param {string} script    The python script to execute
  * @param {object} [options] The launch options (also passed to child_process.spawn)
+ * @param [stdoutSplitter] Optional. Splits stdout into chunks, defaulting to splitting into newline-seperated lines
+ * @param [stderrSplitter] Optional. splits stderr into chunks, defaulting to splitting into newline-seperated lines
  * @constructor
  */
-export class PythonShell extends EventEmitter{
-    scriptPath:string
-    command:string[]
-    mode:string
-    formatter:(param:string|Object)=>any
-    parser:(param:string)=>any
-    stderrParser:(param:string)=>any
-    terminated:boolean
-    childProcess:ChildProcess
+export class PythonShell extends EventEmitter {
+    scriptPath: string
+    command: string[]
+    mode: string
+    formatter: (param: string | Object) => any
+    parser: (param: string) => any
+    stderrParser: (param: string) => any
+    terminated: boolean
+    childProcess: ChildProcess
     stdin: Writable;
     stdout: Readable;
     stderr: Readable;
-    exitSignal:string;
-    exitCode:number;
-    private stderrHasEnded:boolean;
-    private stdoutHasEnded:boolean;
-    private _remaining:string
-    private _endCallback:(err:PythonShellError, exitCode:number, exitSignal:string)=>any
+    exitSignal: string;
+    exitCode: number;
+    private stderrHasEnded: boolean;
+    private stdoutHasEnded: boolean;
+    private _remaining: string
+    private _endCallback: (err: PythonShellError, exitCode: number, exitSignal: string) => any
 
     // starting 2020 python2 is deprecated so we choose 3 as default
-    static defaultPythonPath = process.platform != "win32" ? "python3" : "py";
+    static defaultPythonPath = process.platform != "win32" ? "python3" : "python";
 
-    static defaultOptions:Options = {}; //allow global overrides for options
-    
+    static defaultOptions: Options = {}; //allow global overrides for options
+
     /**
      * spawns a python process
      * @param scriptPath path to script. Relative to current directory or options.scriptFolder if specified
      * @param options 
+     * @param stdoutSplitter Optional. Splits stdout into chunks, defaulting to splitting into newline-seperated lines
+     * @param stderrSplitter Optional. splits stderr into chunks, defaulting to splitting into newline-seperated lines
      */
-    constructor(scriptPath:string, options?:Options) {
+    constructor(scriptPath: string, options?: Options, stdoutSplitter: Transform = null, stderrSplitter: Transform = null) {
         super();
 
         /**
          * returns either pythonshell func (if val string) or custom func (if val Function)
          */
-        function resolve(type, val:string|Function) {
+        function resolve(type, val: string | Function) {
             if (typeof val === 'string') {
                 // use a built-in function using its name
                 return PythonShell[type][val];
@@ -116,14 +144,14 @@ export class PythonShell extends EventEmitter{
             }
         }
 
-        if(scriptPath.trim().length == 0) throw Error("scriptPath cannot be empty! You must give a script for python to run")
+        if (scriptPath.trim().length == 0) throw Error("scriptPath cannot be empty! You must give a script for python to run")
 
         let self = this;
         let errorData = '';
         EventEmitter.call(this);
 
         options = <Options>extend({}, PythonShell.defaultOptions, options);
-        let pythonPath:string;
+        let pythonPath: string;
         if (!options.pythonPath) {
             pythonPath = PythonShell.defaultPythonPath;
         } else pythonPath = options.pythonPath;
@@ -145,21 +173,34 @@ export class PythonShell extends EventEmitter{
             self.parser && self[name] && self[name].setEncoding(options.encoding || 'utf8');
         });
 
-        // parse incoming data on stdout
+        // Node buffers stdout&stderr in batches regardless of newline placement
+        // This is troublesome if you want to recieve distinct individual messages
+        // for example JSON parsing breaks if it recieves partial JSON
+        // so we use newlineTransformer to emit each batch seperated by newline
         if (this.parser && this.stdout) {
-            this.stdout.on('data', this.receive.bind(this));
+            if(!stdoutSplitter) stdoutSplitter = new NewlineTransformer()
+            // note that setting the encoding turns the chunk into a string
+            stdoutSplitter.setEncoding(options.encoding || 'utf8')
+            this.stdout.pipe(stdoutSplitter).on('data', (chunk: string) => {
+                this.emit('message', self.parser(chunk));
+            });
         }
 
         // listen to stderr and emit errors for incoming data
         if (this.stderrParser && this.stderr) {
-            this.stderr.on('data', this.receiveStderr.bind(this));
+            if(!stderrSplitter) stderrSplitter = new NewlineTransformer()
+            // note that setting the encoding turns the chunk into a string
+            stderrSplitter.setEncoding(options.encoding || 'utf8')
+            this.stderr.pipe(stderrSplitter).on('data', (chunk: string) => {
+                this.emit('stderr', self.stderrParser(chunk));
+            });
         }
 
         if (this.stderr) {
             this.stderr.on('data', function (data) {
                 errorData += '' + data;
             });
-            this.stderr.on('end', function(){
+            this.stderr.on('end', function () {
                 self.stderrHasEnded = true;
                 terminateIfNeeded();
             });
@@ -168,7 +209,7 @@ export class PythonShell extends EventEmitter{
         }
 
         if (this.stdout) {
-            this.stdout.on('end', function(){
+            this.stdout.on('end', function () {
                 self.stdoutHasEnded = true;
                 terminateIfNeeded();
             });
@@ -176,16 +217,19 @@ export class PythonShell extends EventEmitter{
             self.stdoutHasEnded = true;
         }
 
-        this.childProcess.on('exit', function (code,signal) {
+        this.childProcess.on('error', function (err: NodeJS.ErrnoException) {
+            self.emit('error', err);
+        })
+        this.childProcess.on('exit', function (code, signal) {
             self.exitCode = code;
             self.exitSignal = signal;
             terminateIfNeeded();
         });
 
         function terminateIfNeeded() {
-            if(!self.stderrHasEnded || !self.stdoutHasEnded || (self.exitCode == null && self.exitSignal == null)) return;
+            if (!self.stderrHasEnded || !self.stdoutHasEnded || (self.exitCode == null && self.exitSignal == null)) return;
 
-            let err:PythonShellError;
+            let err: PythonShellError;
             if (self.exitCode && self.exitCode !== 0) {
                 if (errorData) {
                     err = self.parseError(errorData);
@@ -200,20 +244,20 @@ export class PythonShell extends EventEmitter{
                     exitCode: self.exitCode
                 });
                 // do not emit error if only a callback is used
-                if (self.listeners('error').length || !self._endCallback) {
-                    self.emit('error', err);
+                if (self.listeners('pythonError').length || !self._endCallback) {
+                    self.emit('pythonError', err);
                 }
             }
 
             self.terminated = true;
             self.emit('close');
-            self._endCallback && self._endCallback(err,self.exitCode,self.exitSignal);
+            self._endCallback && self._endCallback(err, self.exitCode, self.exitSignal);
         };
     }
 
     // built-in formatters
     static format = {
-        text: function toText(data):string {
+        text: function toText(data): string {
             if (!data) return '';
             else if (typeof data !== 'string') return data.toString();
             return data;
@@ -225,51 +269,41 @@ export class PythonShell extends EventEmitter{
 
     //built-in parsers
     static parse = {
-        text: function asText(data):string {
+        text: function asText(data): string {
             return data;
         },
-        json: function asJson(data:string) {
+        json: function asJson(data: string) {
             return JSON.parse(data);
         }
     };
 
     /**
-	 * checks syntax without executing code
-	 * @returns {Promise} rejects w/ stderr if syntax failure
-	 */
-	static async checkSyntax(code:string){
+     * checks syntax without executing code
+     * @returns rejects promise w/ string error output if syntax failure
+     */
+    static async checkSyntax(code: string) {
         const randomInt = getRandomInt();
         const filePath = tmpdir() + sep + `pythonShellSyntaxCheck${randomInt}.py`
-        
-        // todo: replace this with util.promisify (once we no longer support node v7)
-	    return new Promise((resolve, reject) => {
-            writeFile(filePath, code, (err)=>{
-                if (err) reject(err);
-                resolve(this.checkSyntaxFile(filePath));
-            });
-        });
+
+        const writeFilePromise = promisify(writeFile)
+        return writeFilePromise(filePath, code).then(() => {
+            return this.checkSyntaxFile(filePath)
+        })
     }
-    
-    static getPythonPath(){
+
+    static getPythonPath() {
         return this.defaultOptions.pythonPath ? this.defaultOptions.pythonPath : this.defaultPythonPath;
     }
 
-	/**
-	 * checks syntax without executing code
-	 * @returns {Promise} rejects w/ stderr if syntax failure
-	 */
-	static async checkSyntaxFile(filePath:string){
-
+    /**
+     * checks syntax without executing code
+     * @returns {Promise} rejects w/ stderr if syntax failure
+     */
+    static async checkSyntaxFile(filePath: string) {
         const pythonPath = this.getPythonPath()
-	    const compileCommand = `${pythonPath} -m py_compile ${filePath}`
-
-        return new Promise<string>((resolve, reject) => {
-            exec(compileCommand, (error, stdout, stderr) => {
-                if(error == null) resolve()
-                else reject(stderr)
-            })
-        })
-	}
+        let compileCommand = `${pythonPath} -m py_compile ${filePath}`
+        return execPromise(compileCommand)
+    }
 
     /**
      * Runs a Python script and returns collected messages
@@ -278,14 +312,14 @@ export class PythonShell extends EventEmitter{
      * @param  {Function} callback The callback function to invoke with the script results
      * @return {PythonShell}       The PythonShell instance
      */
-    static run(scriptPath:string, options?:Options, callback?:(err?:PythonShellError, output?:any[])=>any) {
+    static run(scriptPath: string, options?: Options, callback?: (err?: PythonShellError, output?: any[]) => any) {
         let pyshell = new PythonShell(scriptPath, options);
         let output = [];
 
         return pyshell.on('message', function (message) {
             output.push(message);
         }).end(function (err) {
-            return callback(err? err : null, output.length ? output : null);
+            return callback(err ? err : null, output.length ? output : null);
         });
     };
 
@@ -296,7 +330,7 @@ export class PythonShell extends EventEmitter{
      * @param  {Function} callback The callback function to invoke with the script results
      * @return {PythonShell}       The PythonShell instance
      */
-    static runString(code:string, options?:Options, callback?:(err:PythonShellError, output?:any[])=>any) {
+    static runString(code: string, options?: Options, callback?: (err: PythonShellError, output?: any[]) => any) {
 
         // put code in temp file
         const randomInt = getRandomInt();
@@ -306,14 +340,13 @@ export class PythonShell extends EventEmitter{
         return PythonShell.run(filePath, options, callback);
     };
 
-    static getVersion(pythonPath?:string){
-        if(!pythonPath) pythonPath = this.getPythonPath()
-        const execPromise = promisify(exec)
+    static getVersion(pythonPath?: string) {
+        if (!pythonPath) pythonPath = this.getPythonPath()
         return execPromise(pythonPath + " --version");
     }
 
-    static getVersionSync(pythonPath?:string){
-        if(!pythonPath) pythonPath = this.getPythonPath()
+    static getVersionSync(pythonPath?: string) {
+        if (!pythonPath) pythonPath = this.getPythonPath()
         return execSync(pythonPath + " --version").toString()
     }
 
@@ -322,9 +355,9 @@ export class PythonShell extends EventEmitter{
      * @param  {string|Buffer} data The stderr contents to parse
      * @return {Error} The parsed error with extended stack trace when traceback is available
      */
-    private parseError(data:string|Buffer) {
-        let text = ''+data;
-        let error:PythonShellError;
+    private parseError(data: string | Buffer) {
+        let text = '' + data;
+        let error: PythonShellError;
 
         if (/^Traceback/.test(text)) {
             // traceback data is available
@@ -333,8 +366,8 @@ export class PythonShell extends EventEmitter{
             error = new PythonShellError(exception);
             error.traceback = data;
             // extend stack trace
-            error.stack += newline+'    ----- Python Traceback -----'+newline+'  ';
-            error.stack += lines.slice(1).join(newline+'  ');
+            error.stack += newline + '    ----- Python Traceback -----' + newline + '  ';
+            error.stack += lines.slice(1).join(newline + '  ');
         } else {
             // otherwise, create a simpler error with stderr contents
             error = new PythonShellError(text);
@@ -348,7 +381,7 @@ export class PythonShell extends EventEmitter{
      * Override this method to format data to be sent to the Python process
      * @returns {PythonShell} The same instance for chaining calls
      */
-    send(message:string|Object) {
+    send(message: string | Object) {
         if (!this.stdin) throw new Error("stdin not open for writing");
         let data = this.formatter ? this.formatter(message) : message;
         if (this.mode !== 'binary') data += newline;
@@ -357,55 +390,11 @@ export class PythonShell extends EventEmitter{
     };
 
     /**
-     * Parses data received from the Python shell stdout stream and emits "message" events
-     * This method is not used in binary mode
-     * Override this method to parse incoming data from the Python process into messages
-     * @param {string|Buffer} data The data to parse into messages
-     */
-    receive(data:string|Buffer) {
-        return this.receiveInternal(data, 'message');
-    };
-
-    /**
-     * Parses data received from the Python shell stderr stream and emits "stderr" events
-     * This method is not used in binary mode
-     * Override this method to parse incoming logs from the Python process into messages
-     * @param {string|Buffer} data The data to parse into messages
-     */
-    receiveStderr(data:string|Buffer) {
-        return this.receiveInternal(data, 'stderr');
-    };
-
-    private receiveInternal(data:string|Buffer, emitType:'message'|'stderr'){
-        let self = this;
-        let parts = (''+data).split(newline);
-
-        if (parts.length === 1) {
-            // an incomplete record, keep buffering
-            this._remaining = (this._remaining || '') + parts[0];
-            return this;
-        }
-
-        let lastLine = parts.pop();
-        // fix the first line with the remaining from the previous iteration of 'receive'
-        parts[0] = (this._remaining || '') + parts[0];
-        // keep the remaining for the next iteration of 'receive'
-        this._remaining = lastLine;
-
-        parts.forEach(function (part) {
-            if(emitType == 'message') self.emit(emitType, self.parser(part));
-            else if(emitType == 'stderr') self.emit(emitType, self.stderrParser(part));
-        });
-
-        return this;
-    }
-
-    /**
      * Closes the stdin stream. Unless python is listening for stdin in a loop 
      * this should cause the process to finish its work and close.
      * @returns {PythonShell} The same instance for chaining calls
      */
-    end(callback:(err:PythonShellError, exitCode:number,exitSignal:string)=>any) {
+    end(callback: (err: PythonShellError, exitCode: number, exitSignal: string) => any) {
         if (this.childProcess.stdin) {
             this.childProcess.stdin.end();
         }
@@ -457,16 +446,23 @@ export interface PythonShell {
     prependOnceListener(event: "stderr", listener: (parsedChunk: any) => void): this;
 
     addListener(event: "close", listener: () => void): this;
-    emit(event: "close", ): boolean;
+    emit(event: "close",): boolean;
     on(event: "close", listener: () => void): this;
     once(event: "close", listener: () => void): this;
     prependListener(event: "close", listener: () => void): this;
     prependOnceListener(event: "close", listener: () => void): this;
 
-    addListener(event: "error", listener: (error: PythonShellError) => void): this;
-    emit(event: "error", error: PythonShellError): boolean;
-    on(event: "error", listener: (error: PythonShellError) => void): this;
-    once(event: "error", listener: (error: PythonShellError) => void): this;
-    prependListener(event: "error", listener: (error: PythonShellError) => void): this;
-    prependOnceListener(event: "error", listener: (error: PythonShellError) => void): this;
+    addListener(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
+    emit(event: "error", error: NodeJS.ErrnoException): boolean;
+    on(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
+    once(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
+    prependListener(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
+    prependOnceListener(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
+
+    addListener(event: "pythonError", listener: (error: PythonShellError) => void): this;
+    emit(event: "pythonError", error: PythonShellError): boolean;
+    on(event: "pythonError", listener: (error: PythonShellError) => void): this;
+    once(event: "pythonError", listener: (error: PythonShellError) => void): this;
+    prependListener(event: "pythonError", listener: (error: PythonShellError) => void): this;
+    prependOnceListener(event: "pythonError", listener: (error: PythonShellError) => void): this;
 }
