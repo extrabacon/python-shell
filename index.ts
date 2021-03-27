@@ -93,6 +93,8 @@ export class NewlineTransformer extends Transform {
  * An interactive Python shell exchanging data through stdio
  * @param {string} script    The python script to execute
  * @param {object} [options] The launch options (also passed to child_process.spawn)
+ * @param [stdoutSplitter] Optional. Splits stdout into chunks, defaulting to splitting into newline-seperated lines
+ * @param [stderrSplitter] Optional. splits stderr into chunks, defaulting to splitting into newline-seperated lines
  * @constructor
  */
 export class PythonShell extends EventEmitter {
@@ -123,6 +125,8 @@ export class PythonShell extends EventEmitter {
      * spawns a python process
      * @param scriptPath path to script. Relative to current directory or options.scriptFolder if specified
      * @param options 
+     * @param stdoutSplitter Optional. Splits stdout into chunks, defaulting to splitting into newline-seperated lines
+     * @param stderrSplitter Optional. splits stderr into chunks, defaulting to splitting into newline-seperated lines
      */
     constructor(scriptPath: string, options?: Options, stdoutSplitter: Transform = null, stderrSplitter: Transform = null) {
         super();
