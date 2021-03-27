@@ -328,7 +328,7 @@ describe('PythonShell', function () {
         });
     });
 
-    describe('.receive(data)', function () {
+    describe('stdout', function () {
         it('should emit messages as strings when mode is "text"', function (done) {
             let pyshell = new PythonShell('echo_text.py', {
                 mode: 'text'
@@ -358,15 +358,16 @@ describe('PythonShell', function () {
             }).end(done);
         });
         it('should properly buffer partial messages', function (done) {
-            let pyshell = new PythonShell('echo_text.py', {
-                mode: 'json'
+            // echo_text_with_newline_control echoes text with $'s replaced with newlines
+            let pyshell = new PythonShell('echo_text_with_newline_control.py', {
+                mode: 'text'
             });
             pyshell.on('message', (message) => {
                 console.log(message)
-                message.should.be.an.Object;
-                message.should.eql({ a: true });
-            }).send('{"a"').send(':').send('true}' + newline + '{').send('"a":true}' + newline).end(() => {
-                console.log('done called')
+                let messageObject = JSON.parse(message)
+                messageObject.should.be.an.Object;
+                messageObject.should.eql({ a: true });
+            }).send('{"a"').send(':').send('true}${').send('"a":true}$').end(() => {
                 done()
             });
         });
@@ -375,10 +376,10 @@ describe('PythonShell', function () {
                 args: ['hello', 'world'],
                 mode: 'binary'
             });
-            pyshell.receive = function () {
+            pyshell.on('message', ()=>{
                 done('should not emit messages in binary mode');
                 return undefined
-            };
+            });
             pyshell.end(done);
         });
         it('should use a custom parser function', function (done) {
@@ -399,7 +400,7 @@ describe('PythonShell', function () {
         });
     });
 
-    describe('.receiveStderr(data)', function () {
+    describe('stderr', function () {
         it('should emit stderr logs as strings when mode is "text"', function (done) {
             let pyshell = new PythonShell('stderrLogging.py', {
                 mode: 'text'
@@ -415,13 +416,14 @@ describe('PythonShell', function () {
         });
         it('should not be invoked when mode is "binary"', function (done) {
             let pyshell = new PythonShell('stderrLogging.py', {
-                mode: 'binary'
+                stderrParser: 'binary'
             });
-            pyshell.receiveStderr = function () {
+            pyshell.on('stderr', ()=>{
                 done('should not emit stderr in binary mode');
-                return undefined
-            };
-            pyshell.end(done);
+            });
+            pyshell.end(()=>{
+                done()
+            });
         });
         it('should use a custom parser function', function (done) {
             let pyshell = new PythonShell('stderrLogging.py', {
@@ -494,6 +496,15 @@ describe('PythonShell', function () {
         });
         it('should extend err.stack with traceback', function (done) {
             let pyshell = new PythonShell('error.py');
+            pyshell.on('pythonError', function (err) {
+                err.stack.should.containEql('----- Python Traceback -----');
+                err.stack.should.containEql('File "test' + sep + 'python' + sep + 'error.py", line 4');
+                err.stack.should.containEql('File "test' + sep + 'python' + sep + 'error.py", line 6');
+                done();
+            });
+        });
+        it('should work in json mode', function (done) {
+            let pyshell = new PythonShell('error.py', {mode: 'json'});
             pyshell.on('pythonError', function (err) {
                 err.stack.should.containEql('----- Python Traceback -----');
                 err.stack.should.containEql('File "test' + sep + 'python' + sep + 'error.py", line 4');

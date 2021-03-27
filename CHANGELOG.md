@@ -2,6 +2,7 @@
 ### Changed
 - **BREAKING** Default python path changed back to `python` on Windows. [#237](https://github.com/extrabacon/python-shell/issues/237)
 - **BREAKING** `error` event renamed to `pythonError` event. [#118](https://github.com/extrabacon/python-shell/issues/118)
+- **BREAKING** `receive` methods removed in favor of `splitter` arguments in the constructor. This lets the default splitting logic reside in a reuseable stream transformer. Now if you have extra pipes you can reuse `newlineTransformer` to split incoming data into newline-seperated lines.
 
 ### Added
 - `error` event that is fired upon failure to launch process, among other things. [#118](https://github.com/extrabacon/python-shell/issues/118)

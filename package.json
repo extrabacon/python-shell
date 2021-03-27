@@ -10,12 +10,10 @@
     "appveyorTest": "tsc -p ./ && nyc mocha --reporter mocha-appveyor-reporter test/*.js",
     "compile": "tsc -watch -p ./"
   },
-  "dependencies": {
-    "line-transform-stream": "^0.1.0"
-  },
   "devDependencies": {
     "@types/mocha": "^8.2.1",
     "@types/node": "^10.5.2",
+    "@types/should": "^13.0.0",
     "mocha": "^8.2.1",
     "mocha-appveyor-reporter": "^0.4.0",
     "should": "^13.2.1",

@@ -161,17 +161,19 @@ Creates an instance of `PythonShell` and starts the Python process
 * `script`: the path of the script to execute
 * `options`: the execution options, consisting of:
   * `mode`: Configures how data is exchanged when data flows through stdin and stdout. The possible values are:
-    * `text`: each line of data (ending with "\n") is emitted as a message (default)
-    * `json`: each line of data (ending with "\n") is parsed as JSON and emitted as a message
+    * `text`: each line of data is emitted as a message (default)
+    * `json`: each line of data is parsed as JSON and emitted as a message
     * `binary`: data is streamed as-is through `stdout` and `stdin`
-  * `formatter`: each message to send is transformed using this method, then appended with "\n"
-  * `parser`: each line of data (ending with "\n") is parsed with this function and its result is emitted as a message
-  * `stderrParser`: each line of logs (ending with "\n") is parsed with this function and its result is emitted as a message
+  * `formatter`: each message to send is transformed using this method, then appended with a newline
+  * `parser`: each line of data is parsed with this function and its result is emitted as a message
+  * `stderrParser`: each line of logs is parsed with this function and its result is emitted as a message
   * `encoding`: the text encoding to apply on the child process streams (default: "utf8")
   * `pythonPath`: The path where to locate the "python" executable. Default: "python3" ("python" for Windows)
   * `pythonOptions`: Array of option switches to pass to "python"
   * `scriptPath`: The default path where to look for scripts. Default is the current working directory.
   * `args`: Array of arguments to pass to the script
+* `stdoutSplitter`: splits stdout into chunks, defaulting to splitting into newline-seperated lines
+* `stderrSplitter`: splits stderr into chunks, defaulting to splitting into newline-seperated lines
 
 Other options are forwarded to `child_process.spawn`.
 
@@ -269,14 +271,6 @@ let shell = new PythonShell('script.py', { mode: 'json'});
 shell.send({ command: "do_stuff", args: [1, 2, 3] });
 ```
 
-#### `.receive(data)`
-
-Parses incoming data from the Python script written via stdout and emits `message` events. This method is called automatically as data is being received from stdout.
-
-#### `.receiveStderr(data)`
-
-Parses incoming logs from the Python script written via stderr and emits `stderr` events. This method is called automatically as data is being received from stderr.
-
 #### `.end(callback)`
 
 Closes the stdin stream, allowing the Python script to finish and exit. The optional callback is invoked when the process is terminated.
@@ -287,7 +281,7 @@ Terminates the python script. A kill signal may be provided by `signal`, if `sig
 
 #### event: `message`
 
-Fires when a chunk of data is parsed from the stdout stream via the `receive` method. If a `parser` method is specified, the result of this function will be the message value. This event is not emitted in binary mode.
+After the stdout stream is split into chunks by stdoutSplitter the chunks are parsed by the parser and a message event is emitted for each parsed chunk. This event is not emitted in binary mode.
 
 Example:
 
@@ -307,7 +301,7 @@ shell.on('message', function (message) {
 
 #### event: `stderr`
 
-Fires when a chunk of logs is parsed from the stderr stream via the `receiveStderr` method. If a `stderrParser` method is specified, the result of this function will be the message value. This event is not emitted in binary mode.
+After the stderr stream is split into chunks by stderrSplitter the chunks are parsed by the parser and a message event is emitted for each parsed chunk. This event is not emitted in binary mode.
 
 Example:
 
@@ -335,6 +329,10 @@ Fires when:
 * Sending a message to the child process failed.
 
 If the process could not be spawned please double-check that python can be launched from the terminal.
+
+### NewlineTransformer
+
+A utility class for splitting stream data into newlines. Used as the default for stdoutSplitter and stderrSplitter if they are unspecified. You can use this class for any extra python streams if you'd like.
 
 ## Used By:
 

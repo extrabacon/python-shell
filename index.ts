@@ -2,10 +2,9 @@ import { EventEmitter } from 'events';
 import { ChildProcess, spawn, SpawnOptions, exec, execSync } from 'child_process';
 import { EOL as newline, tmpdir } from 'os';
 import { join, sep } from 'path'
-import { Readable, Writable } from 'stream'
+import { Readable, Transform, TransformCallback, Writable } from 'stream'
 import { writeFile, writeFileSync } from 'fs';
 import { promisify } from 'util';
-const LineTransformStream = require('line-transform-stream')
 
 function toArray<T>(source?: T | T[]): T[] {
     if (typeof source === 'undefined' || source === null) {
@@ -44,9 +43,9 @@ export interface Options extends SpawnOptions {
      * if binary is enabled message and stderr events will not be emitted
      */
     mode?: 'text' | 'json' | 'binary'
-    formatter?: (param: string) => any
-    parser?: (param: string) => any
-    stderrParser?: (param: string) => any
+    formatter?: string | ((param: string) => any)
+    parser?: string | ((param: string) => any)
+    stderrParser?: string | ((param: string) => any)
     encoding?: string
     pythonPath?: string
     /**
@@ -66,6 +65,28 @@ export interface Options extends SpawnOptions {
 export class PythonShellError extends Error {
     traceback: string | Buffer;
     exitCode?: number;
+}
+
+/**
+ * Takes in a string stream and emits batches seperated by newlines
+ */
+export class NewlineTransformer extends Transform {
+    // NewlineTransformer: Megatron's little known once-removed cousin
+    private _lastLineData: string;
+    _transform(chunk: any, encoding: string, callback: TransformCallback){
+        let data: string = chunk.toString()
+        if (this._lastLineData) data = this._lastLineData + data
+        const lines = data.split(newline)
+        this._lastLineData = lines.pop()
+        //@ts-ignore this works, node ignores the encoding if it's a number
+        lines.forEach(this.push.bind(this))
+        callback()
+    }
+    _flush(done: TransformCallback){
+        if (this._lastLineData) this.push(this._lastLineData)
+        this._lastLineData = null;
+        done()
+    }
 }
 
 /**
@@ -103,7 +124,7 @@ export class PythonShell extends EventEmitter {
      * @param scriptPath path to script. Relative to current directory or options.scriptFolder if specified
      * @param options 
      */
-    constructor(scriptPath: string, options?: Options) {
+    constructor(scriptPath: string, options?: Options, stdoutSplitter: Transform = null, stderrSplitter: Transform = null) {
         super();
 
         /**
@@ -151,16 +172,24 @@ export class PythonShell extends EventEmitter {
         // Node buffers stdout&stderr in batches regardless of newline placement
         // This is troublesome if you want to recieve distinct individual messages
         // for example JSON parsing breaks if it recieves partial JSON
-        // so we use LineTransformStream to emit each batch seperated by newline
+        // so we use newlineTransformer to emit each batch seperated by newline
         if (this.parser && this.stdout) {
-            this.stdout.pipe(new LineTransformStream((data) => {
-                this.emit('message', self.parser(data));
-            }))
+            if(!stdoutSplitter) stdoutSplitter = new NewlineTransformer()
+            // note that setting the encoding turns the chunk into a string
+            stdoutSplitter.setEncoding(options.encoding || 'utf8')
+            this.stdout.pipe(stdoutSplitter).on('data', (chunk: string) => {
+                this.emit('message', self.parser(chunk));
+            });
         }
+
+        // listen to stderr and emit errors for incoming data
         if (this.stderrParser && this.stderr) {
-            this.stderr.pipe(new LineTransformStream((data) => {
-                this.emit('stderr', self.stderrParser(data));
-            }))
+            if(!stderrSplitter) stderrSplitter = new NewlineTransformer()
+            // note that setting the encoding turns the chunk into a string
+            stderrSplitter.setEncoding(options.encoding || 'utf8')
+            this.stderr.pipe(stderrSplitter).on('data', (chunk: string) => {
+                this.emit('stderr', self.stderrParser(chunk));
+            });
         }
 
         if (this.stderr) {
