@@ -257,7 +257,10 @@ describe('PythonShell', function () {
                 // * inherit - inherit fd from parent process;
                 // * process.stderr - pass output directly to that stream.
                 stdio: ['ignore', 'inherit', process.stderr],
-                args: ["0"]
+                // @ts-expect-error python-shell technically allows a non-array arg,
+                // although the user shouldn't be doing this. We are just testing for
+                // increased code coverage
+                args: "0"
             }, done);
 
             should(pyshell.stdin).be.eql(null);
@@ -376,7 +379,7 @@ describe('PythonShell', function () {
                 args: ['hello', 'world'],
                 mode: 'binary'
             });
-            pyshell.on('message', ()=>{
+            pyshell.on('message', () => {
                 done('should not emit messages in binary mode');
                 return undefined
             });
@@ -418,10 +421,10 @@ describe('PythonShell', function () {
             let pyshell = new PythonShell('stderrLogging.py', {
                 stderrParser: 'binary'
             });
-            pyshell.on('stderr', ()=>{
+            pyshell.on('stderr', () => {
                 done('should not emit stderr in binary mode');
             });
-            pyshell.end(()=>{
+            pyshell.end(() => {
                 done()
             });
         });
@@ -504,7 +507,7 @@ describe('PythonShell', function () {
             });
         });
         it('should work in json mode', function (done) {
-            let pyshell = new PythonShell('error.py', {mode: 'json'});
+            let pyshell = new PythonShell('error.py', { mode: 'json' });
             pyshell.on('pythonError', function (err) {
                 err.stack.should.containEql('----- Python Traceback -----');
                 err.stack.should.containEql('File "test' + sep + 'python' + sep + 'error.py", line 4');
