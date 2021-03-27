@@ -332,7 +332,27 @@ If the process could not be spawned please double-check that python can be launc
 
 ### NewlineTransformer
 
-A utility class for splitting stream data into newlines. Used as the default for stdoutSplitter and stderrSplitter if they are unspecified. You can use this class for any extra python streams if you'd like.
+A utility class for splitting stream data into newlines. Used as the default for stdoutSplitter and stderrSplitter if they are unspecified. You can use this class for any extra python streams if you'd like. For example:
+
+```python
+# foo.py
+print('hello world', file=open(3, "w"))
+```
+
+```typescript
+import { PythonShell, NewlineTransformer, Options } from 'python-shell'
+
+const options: Options = {
+    'stdio':
+        ['pipe', 'pipe', 'pipe', 'pipe'] // stdin, stdout, stderr, custom
+}
+const pyshell = new PythonShell('foo.py', options)
+
+const customPipe = pyshell.childProcess.stdio[3]
+customPipe.pipe(new NewlineTransformer()).on('data', (customResult: Buffer) => {
+    console.log(customResult.toString())
+})
+```
 
 ## Used By:
 
