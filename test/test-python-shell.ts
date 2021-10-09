@@ -517,33 +517,29 @@ describe('PythonShell', function () {
         });
     });
 
-    describe('.terminate()', function () {
-        it('set terminated to true', function (done) {
+    describe('.kill()', function () {
+        it('set terminated to correct value', function (done) {
             let pyshell = new PythonShell('infinite_loop.py');
-            pyshell.terminate();
+            pyshell.kill();
             pyshell.terminated.should.be.true
             done();
         });
         it('run the end callback if specified', function (done) {
             let pyshell = new PythonShell('infinite_loop.py');
-            let endCalled = false;
             pyshell.end(() => {
-                endCalled = true;
+                done();
             })
-            pyshell.terminate();
-            pyshell.terminated.should.be.true
-            done();
+            pyshell.kill();
         });
         it('kill with correct signal', function (done) {
             let pyshell = new PythonShell('infinite_loop.py');
-            let endCalled = false;
-            pyshell.end(() => {
-                endCalled = true;
-            })
+            pyshell.terminated.should.be.false;
             pyshell.kill('SIGKILL');
             pyshell.terminated.should.be.true;
-            setTimeout(() => { pyshell.exitSignal.should.be.exactly('SIGKILL'); }, 500);
-            done();
+            setTimeout(() => {
+                pyshell.exitSignal.should.be.exactly('SIGKILL');
+                done();
+            }, 500);
         });
     });
 });
