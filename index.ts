@@ -407,8 +407,7 @@ export class PythonShell extends EventEmitter {
      * @returns {PythonShell} The same instance for chaining calls
      */
     kill(signal?: NodeJS.Signals) {
-        this.childProcess.kill(signal);
-        this.terminated = true;
+        this.terminated = this.childProcess.kill(signal);
         return this;
     };
 
