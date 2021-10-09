@@ -46,7 +46,7 @@ export interface Options extends SpawnOptions {
     formatter?: string | ((param: string) => any)
     parser?: string | ((param: string) => any)
     stderrParser?: string | ((param: string) => any)
-    encoding?: string
+    encoding?: BufferEncoding
     pythonPath?: string
     /**
      * see https://docs.python.org/3.7/using/cmdline.html
