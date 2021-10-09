@@ -1,3 +1,7 @@
+## [3.0.1] - 2021-10-09
+### Fixed
+- Previously when you called the kill method the terminated attribute was always set to true, regardless of whether the process was actually killed. Now the terminated boolean is set to true if kill succeeds, false otherwise. [#255](https://github.com/extrabacon/python-shell/issues/255)
+
 ## [3.0.0] - 2021-03-07
 ### Changed
 - **BREAKING** Default python path changed back to `python` on Windows. [#237](https://github.com/extrabacon/python-shell/issues/237)
