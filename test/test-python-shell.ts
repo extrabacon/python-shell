@@ -534,13 +534,13 @@ describe('PythonShell', function () {
             pyshell.terminated.should.be.true
             done();
         });
-        it('terminate with correct kill signal', function (done) {
+        it('kill with correct signal', function (done) {
             let pyshell = new PythonShell('infinite_loop.py');
             let endCalled = false;
             pyshell.end(() => {
                 endCalled = true;
             })
-            pyshell.terminate('SIGKILL');
+            pyshell.kill('SIGKILL');
             pyshell.terminated.should.be.true;
             setTimeout(() => { pyshell.exitSignal.should.be.exactly('SIGKILL'); }, 500);
             done();
