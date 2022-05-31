@@ -310,18 +310,23 @@ export class PythonShell extends EventEmitter {
      * @param  {string}   scriptPath   The path to the script to execute
      * @param  {Options}   options  The execution options
      * @param  {Function} callback The callback function to invoke with the script results
-     * @return {PythonShell}       The PythonShell instance
+     * @return {Promise}  the output from the python script
      */
     static run(scriptPath: string, options?: Options, callback?: (err?: PythonShellError, output?: any[]) => any) {
         let pyshell = new PythonShell(scriptPath, options);
         let output = [];
 
-        return pyshell.on('message', function (message) {
-            output.push(message);
-        }).end(function (err) {
-            return callback(err ? err : null, output.length ? output : null);
+        return new Promise((resolve, reject) => {
+            return pyshell.on('message', function (message) {
+                output.push(message);
+            }).end(function (err) {
+                if(err) reject(err);
+                else resolve(output);
+                return callback(err ? err : null, output.length ? output : null);
+            });
         });
     };
+
 
     /**
      * Runs the inputted string of python code and returns collected messages. DO NOT ALLOW UNTRUSTED USER INPUT HERE!

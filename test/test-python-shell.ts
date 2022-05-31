@@ -250,8 +250,8 @@ describe('PythonShell', function () {
             };
         })
 
-        it('should run PythonShell normally without access to std streams', function (done) {
-            var pyshell = PythonShell.run('exit-code.py', {
+        it('should run PythonShell normally without access to std streams', async function (done) {
+            var pyshell = await PythonShell.run('exit-code.py', {
                 // 3 different ways of assigning values to the std streams in child_process.spawn()
                 // * ignore - pipe to /dev/null
                 // * inherit - inherit fd from parent process;
@@ -263,10 +263,7 @@ describe('PythonShell', function () {
                 args: "0"
             }, done);
 
-            should(pyshell.stdin).be.eql(null);
-            should(pyshell.stdout).be.eql(null);
-            should(pyshell.stderr).be.eql(null);
-            should.throws(() => { pyshell.send("asd") });
+            should(pyshell).be.eql([]);
         });
     });
 
