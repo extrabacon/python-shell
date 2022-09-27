@@ -11,13 +11,13 @@ image:
 environment:
   matrix:
 
-    - nodejs_version: "12"
-      PYTHON: "C:\\Python37-x64"
-
     - nodejs_version: "14"
       PYTHON: "C:\\Python37-x64"
 
     - nodejs_version: "16"
+      PYTHON: "C:\\Python37-x64"
+      
+    - nodejs_version: "18"
       PYTHON: "C:\\Python37-x64"
   
 install:
