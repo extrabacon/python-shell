@@ -250,7 +250,7 @@ describe('PythonShell', function () {
             };
         })
 
-        it('should run PythonShell normally without access to std streams', async function (done) {
+        it('should run PythonShell normally without access to std streams', async function () {
             var pyshell = await PythonShell.run('exit-code.py', {
                 // 3 different ways of assigning values to the std streams in child_process.spawn()
                 // * ignore - pipe to /dev/null
@@ -261,9 +261,10 @@ describe('PythonShell', function () {
                 // although the user shouldn't be doing this. We are just testing for
                 // increased code coverage
                 args: "0"
-            }, done);
+            });
 
             should(pyshell).be.eql([]);
+            
         });
     });
 

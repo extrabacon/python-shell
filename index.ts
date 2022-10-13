@@ -309,23 +309,42 @@ export class PythonShell extends EventEmitter {
      * Runs a Python script and returns collected messages
      * @param  {string}   scriptPath   The path to the script to execute
      * @param  {Options}   options  The execution options
-     * @param  {Function} callback The callback function to invoke with the script results
-     * @return {Promise}  the output from the python script
+     * @param  {Function} (deprecated argument) callback The callback function to invoke with the script results
+     * @return {Promise<string[]> | PythonShell}  the output from the python script
      */
-    static run(scriptPath: string, options?: Options, callback?: (err?: PythonShellError, output?: any[]) => any) {
+     static run(scriptPath: string, options?: Options, callback?: (err?: PythonShellError, output?: any[]) => any) {
+
+        if(callback) {
+            console.warn('PythonShell.run() callback is deprecated. Use PythonShell.run() promise instead.')
+
+            return this.runLegacy(scriptPath, options, callback);
+        }
+        else {
+            return new Promise((resolve, reject) => {
+                let pyshell = new PythonShell(scriptPath, options);
+                let output = [];
+
+                pyshell.on('message', function (message) {
+                    output.push(message);
+                }).end(function (err) {
+                    if(err) reject(err);
+                    else resolve(output);
+                });
+            });
+        }
+    };
+
+    private static runLegacy(scriptPath: string, options?: Options, callback?: (err?: PythonShellError, output?: any[]) => any) {
         let pyshell = new PythonShell(scriptPath, options);
         let output = [];
 
-        return new Promise((resolve, reject) => {
-            return pyshell.on('message', function (message) {
-                output.push(message);
-            }).end(function (err) {
-                if(err) reject(err);
-                else resolve(output);
-                return callback(err ? err : null, output.length ? output : null);
-            });
+        return pyshell.on('message', function (message) {
+            output.push(message);
+        }).end(function (err) {
+            return callback(err ? err : null, output.length ? output : null);
         });
     };
+
 
 
     /**
@@ -335,7 +354,7 @@ export class PythonShell extends EventEmitter {
      * @param  {Function} callback The callback function to invoke with the script results
      * @return {PythonShell}       The PythonShell instance
      */
-    static runString(code: string, options?: Options, callback?: (err: PythonShellError, output?: any[]) => any) {
+     static runString(code: string, options?: Options, callback?: (err: PythonShellError, output?: any[]) => any) {
 
         // put code in temp file
         const randomInt = getRandomInt();
