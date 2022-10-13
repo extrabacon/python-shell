@@ -117,13 +117,18 @@ describe('PythonShell', function () {
         before(() => {
             PythonShell.defaultOptions = {};
         })
-        it('should be able to execute a string of python code', function (done) {
+        it('should be able to execute a string of python code using callbacks', function (done) {
             PythonShell.runString('print("hello");print("world")', null, function (err, results) {
                 if (err) return done(err);
                 results.should.be.an.Array().and.have.lengthOf(2);
                 results.should.eql(['hello', 'world']);
                 done();
             });
+        });
+        it('should be able to execute a string of python code using promises', async function () {
+            let results = await PythonShell.runString('print("hello");print("world")');
+            results.should.be.an.Array().and.have.lengthOf(2);
+            results.should.eql(['hello', 'world']);
         });
         after(() => {
             PythonShell.defaultOptions = {
@@ -134,7 +139,7 @@ describe('PythonShell', function () {
     });
 
     describe('#run(script, options)', function () {
-        it('should run the script and return output data', function (done) {
+        it('should run the script and return output data using callbacks', function (done) {
             PythonShell.run('echo_args.py', {
                 args: ['hello', 'world']
             }, function (err, results) {
@@ -144,12 +149,28 @@ describe('PythonShell', function () {
                 done();
             });
         });
+        it('should run the script and return output data using promise', async function () {
+            let results = await PythonShell.run('echo_args.py', {
+                args: ['hello', 'world']
+            });
+            results.should.be.an.Array().and.have.lengthOf(2);
+            results.should.eql(['hello', 'world']);
+        });
         it('should try to run the script and fail appropriately', function (done) {
             PythonShell.run('unknown_script.py', null, function (err, results) {
                 err.should.be.an.Error;
                 err.exitCode.should.be.exactly(2);
                 done();
             });
+        });
+        it('should try to run the script and fail appropriately', async function () {
+            try {
+                let results = await PythonShell.run('unknown_script.py');
+                throw new Error(`should not get here because the script should fail` + results);
+            } catch (err) {
+                err.should.be.an.Error;
+                err.exitCode.should.be.exactly(2);
+            }
         });
         it('should include both output and error', function (done) {
             PythonShell.run('echo_hi_then_error.py', null, function (err, results) {
