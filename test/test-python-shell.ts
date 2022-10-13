@@ -118,12 +118,14 @@ describe('PythonShell', function () {
             PythonShell.defaultOptions = {};
         })
         it('should be able to execute a string of python code using callbacks', function (done) {
-            PythonShell.runString('print("hello");print("world")', null, function (err, results) {
+            let pythonshell = PythonShell.runString('print("hello");print("world")', null, function (err, results) {
                 if (err) return done(err);
                 results.should.be.an.Array().and.have.lengthOf(2);
                 results.should.eql(['hello', 'world']);
                 done();
             });
+
+            pythonshell.should.be.an.instanceOf(PythonShell);
         });
         it('should be able to execute a string of python code using promises', async function () {
             let results = await PythonShell.runString('print("hello");print("world")');
