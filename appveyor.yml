@@ -23,6 +23,7 @@ environment:
 install:
   - cmd: powershell Install-Product node $env:nodejs_version
   - sh: nvm install $nodejs_version
+  - node --version
   - npm install
   - npm install codecov -g
   - npm install nyc -g
