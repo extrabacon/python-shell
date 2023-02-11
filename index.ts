@@ -310,12 +310,12 @@ export class PythonShell extends EventEmitter {
     }
 
     /**
-     * Runs a Python script and returns collected messages as a promise
+     * Runs a Python script and returns collected messages as a promise. 
+     * If the promise is rejected, the err will probably be of type PythonShellErrorWithLogs
      * @param scriptPath   The path to the script to execute
      * @param options  The execution options
-     * @return a promise with the output from the python script
      */
-     static run(scriptPath: string, options?: Options) {
+     static run(scriptPath: string, options?: Options): Promise<any[]> {
         return new Promise((resolve, reject) => {
             let pyshell = new PythonShell(scriptPath, options);
             let output = [];
