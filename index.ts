@@ -309,10 +309,32 @@ export class PythonShell extends EventEmitter {
      * Runs a Python script and returns collected messages
      * @param  {string}   scriptPath   The path to the script to execute
      * @param  {Options}   options  The execution options
-     * @param  {Function} callback The callback function to invoke with the script results
-     * @return {PythonShell}       The PythonShell instance
+     * @param  {Function} (deprecated argument) callback The callback function to invoke with the script results
+     * @return {Promise<string[]> | PythonShell}  the output from the python script
      */
-    static run(scriptPath: string, options?: Options, callback?: (err?: PythonShellError, output?: any[]) => any) {
+     static run(scriptPath: string, options?: Options, callback?: (err?: PythonShellError, output?: any[]) => any) {
+
+        if(callback) {
+            console.warn('PythonShell.run() callback is deprecated. Use PythonShell.run() promise instead.')
+
+            return this.runLegacy(scriptPath, options, callback);
+        }
+        else {
+            return new Promise((resolve, reject) => {
+                let pyshell = new PythonShell(scriptPath, options);
+                let output = [];
+
+                pyshell.on('message', function (message) {
+                    output.push(message);
+                }).end(function (err) {
+                    if(err) reject(err);
+                    else resolve(output);
+                });
+            });
+        }
+    };
+
+    private static runLegacy(scriptPath: string, options?: Options, callback?: (err?: PythonShellError, output?: any[]) => any) {
         let pyshell = new PythonShell(scriptPath, options);
         let output = [];
 
@@ -323,6 +345,8 @@ export class PythonShell extends EventEmitter {
         });
     };
 
+
+
     /**
      * Runs the inputted string of python code and returns collected messages. DO NOT ALLOW UNTRUSTED USER INPUT HERE!
      * @param  {string}   code   The python code to execute
@@ -330,7 +354,7 @@ export class PythonShell extends EventEmitter {
      * @param  {Function} callback The callback function to invoke with the script results
      * @return {PythonShell}       The PythonShell instance
      */
-    static runString(code: string, options?: Options, callback?: (err: PythonShellError, output?: any[]) => any) {
+     static runString(code: string, options?: Options, callback?: (err: PythonShellError, output?: any[]) => any) {
 
         // put code in temp file
         const randomInt = getRandomInt();

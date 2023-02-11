@@ -117,13 +117,20 @@ describe('PythonShell', function () {
         before(() => {
             PythonShell.defaultOptions = {};
         })
-        it('should be able to execute a string of python code', function (done) {
-            PythonShell.runString('print("hello");print("world")', null, function (err, results) {
+        it('should be able to execute a string of python code using callbacks', function (done) {
+            let pythonshell = PythonShell.runString('print("hello");print("world")', null, function (err, results) {
                 if (err) return done(err);
                 results.should.be.an.Array().and.have.lengthOf(2);
                 results.should.eql(['hello', 'world']);
                 done();
             });
+
+            pythonshell.should.be.an.instanceOf(PythonShell);
+        });
+        it('should be able to execute a string of python code using promises', async function () {
+            let results = await PythonShell.runString('print("hello");print("world")');
+            results.should.be.an.Array().and.have.lengthOf(2);
+            results.should.eql(['hello', 'world']);
         });
         after(() => {
             PythonShell.defaultOptions = {
@@ -134,7 +141,7 @@ describe('PythonShell', function () {
     });
 
     describe('#run(script, options)', function () {
-        it('should run the script and return output data', function (done) {
+        it('should run the script and return output data using callbacks', function (done) {
             PythonShell.run('echo_args.py', {
                 args: ['hello', 'world']
             }, function (err, results) {
@@ -144,12 +151,28 @@ describe('PythonShell', function () {
                 done();
             });
         });
+        it('should run the script and return output data using promise', async function () {
+            let results = await PythonShell.run('echo_args.py', {
+                args: ['hello', 'world']
+            });
+            results.should.be.an.Array().and.have.lengthOf(2);
+            results.should.eql(['hello', 'world']);
+        });
         it('should try to run the script and fail appropriately', function (done) {
             PythonShell.run('unknown_script.py', null, function (err, results) {
                 err.should.be.an.Error;
                 err.exitCode.should.be.exactly(2);
                 done();
             });
+        });
+        it('should try to run the script and fail appropriately', async function () {
+            try {
+                let results = await PythonShell.run('unknown_script.py');
+                throw new Error(`should not get here because the script should fail` + results);
+            } catch (err) {
+                err.should.be.an.Error;
+                err.exitCode.should.be.exactly(2);
+            }
         });
         it('should include both output and error', function (done) {
             PythonShell.run('echo_hi_then_error.py', null, function (err, results) {
@@ -250,8 +273,8 @@ describe('PythonShell', function () {
             };
         })
 
-        it('should run PythonShell normally without access to std streams', function (done) {
-            var pyshell = PythonShell.run('exit-code.py', {
+        it('should run PythonShell normally without access to std streams', async function () {
+            var pyshell = await PythonShell.run('exit-code.py', {
                 // 3 different ways of assigning values to the std streams in child_process.spawn()
                 // * ignore - pipe to /dev/null
                 // * inherit - inherit fd from parent process;
@@ -261,12 +284,10 @@ describe('PythonShell', function () {
                 // although the user shouldn't be doing this. We are just testing for
                 // increased code coverage
                 args: "0"
-            }, done);
+            });
 
-            should(pyshell.stdin).be.eql(null);
-            should(pyshell.stdout).be.eql(null);
-            should(pyshell.stderr).be.eql(null);
-            should.throws(() => { pyshell.send("asd") });
+            should(pyshell).be.eql([]);
+            
         });
     });
 
