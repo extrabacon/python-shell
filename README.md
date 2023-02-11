@@ -215,7 +215,7 @@ PythonShell.run('script.py', null).then(results => {
 });
 ```
 
-#### `#runString(code, options, callback)`
+#### `#runString(code, options)`
 
 Runs the Python script and returns a promise. When you handle the promise the argument will be an array of messages emitted from the Python script.
 
