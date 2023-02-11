@@ -1,3 +1,8 @@
+## [4.0.0] - 2023-02-10
+### Changed
+- run and runString now return a promise instead of a using a callback.
+- This is somewhat backwards compatible with previous behavior
+
 ## [3.0.1] - 2021-10-09
 ### Fixed
 - Previously when you called the kill method the terminated attribute was always set to true, regardless of whether the process was actually killed. Now the terminated boolean is set to true if kill succeeds, false otherwise. [#255](https://github.com/extrabacon/python-shell/issues/255)
