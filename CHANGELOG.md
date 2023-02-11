@@ -1,3 +1,12 @@
+## [5.0.0] - 2023-02-10
+### BREAKING CHANGES
+- run and runString now return a promise instead of a using a callback.
+- You will need to 1) check the return value, 2) remove the callback argument, and 3) change to a promise
+- see readme for usage examples
+
+### Other notes
+- I confirmed that python-shell works with python 3.11 and node v18.
+
 ## [4.0.0] - 2023-02-10
 ### Changed
 - run and runString now return a promise instead of a using a callback.

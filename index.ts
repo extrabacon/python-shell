@@ -67,6 +67,10 @@ export class PythonShellError extends Error {
     exitCode?: number;
 }
 
+export class PythonShellErrorWithLogs extends PythonShellError {
+    logs: any[]
+}
+
 /**
  * Takes in a string stream and emits batches seperated by newlines
  */
@@ -306,62 +310,44 @@ export class PythonShell extends EventEmitter {
     }
 
     /**
-     * Runs a Python script and returns collected messages
-     * @param  {string}   scriptPath   The path to the script to execute
-     * @param  {Options}   options  The execution options
-     * @param  {Function} (deprecated argument) callback The callback function to invoke with the script results
-     * @return {Promise<string[]> | PythonShell}  the output from the python script
+     * Runs a Python script and returns collected messages as a promise. 
+     * If the promise is rejected, the err will probably be of type PythonShellErrorWithLogs
+     * @param scriptPath   The path to the script to execute
+     * @param options  The execution options
      */
-     static run(scriptPath: string, options?: Options, callback?: (err?: PythonShellError, output?: any[]) => any) {
+     static run(scriptPath: string, options?: Options): Promise<any[]> {
+        return new Promise((resolve, reject) => {
+            let pyshell = new PythonShell(scriptPath, options);
+            let output = [];
 
-        if(callback) {
-            console.warn('PythonShell.run() callback is deprecated. Use PythonShell.run() promise instead.')
-
-            return this.runLegacy(scriptPath, options, callback);
-        }
-        else {
-            return new Promise((resolve, reject) => {
-                let pyshell = new PythonShell(scriptPath, options);
-                let output = [];
-
-                pyshell.on('message', function (message) {
-                    output.push(message);
-                }).end(function (err) {
-                    if(err) reject(err);
-                    else resolve(output);
-                });
+            pyshell.on('message', function (message) {
+                output.push(message);
+            }).end(function (err) {
+                if(err){
+                    (err as PythonShellErrorWithLogs).logs = output
+                    reject(err);
+                }
+                else resolve(output);
             });
-        }
-    };
-
-    private static runLegacy(scriptPath: string, options?: Options, callback?: (err?: PythonShellError, output?: any[]) => any) {
-        let pyshell = new PythonShell(scriptPath, options);
-        let output = [];
-
-        return pyshell.on('message', function (message) {
-            output.push(message);
-        }).end(function (err) {
-            return callback(err ? err : null, output.length ? output : null);
         });
     };
 
 
 
     /**
-     * Runs the inputted string of python code and returns collected messages. DO NOT ALLOW UNTRUSTED USER INPUT HERE!
-     * @param  {string}   code   The python code to execute
-     * @param  {Options}   options  The execution options
-     * @param  {Function} callback The callback function to invoke with the script results
-     * @return {PythonShell}       The PythonShell instance
+     * Runs the inputted string of python code and returns collected messages as a promise. DO NOT ALLOW UNTRUSTED USER INPUT HERE!
+     * @param code   The python code to execute
+     * @param options  The execution options
+     * @return a promise with the output from the python script
      */
-     static runString(code: string, options?: Options, callback?: (err: PythonShellError, output?: any[]) => any) {
+     static runString(code: string, options?: Options) {
 
         // put code in temp file
         const randomInt = getRandomInt();
         const filePath = tmpdir + sep + `pythonShellFile${randomInt}.py`
         writeFileSync(filePath, code);
 
-        return PythonShell.run(filePath, options, callback);
+        return PythonShell.run(filePath, options);
     };
 
     static getVersion(pythonPath?: string) {

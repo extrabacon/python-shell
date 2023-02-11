@@ -27,8 +27,7 @@ npm install python-shell
 ```typescript
 import {PythonShell} from 'python-shell';
 
-PythonShell.runString('x=1+1;print(x)', null, function (err) {
-  if (err) throw err;
+PythonShell.runString('x=1+1;print(x)', null).then(messages=>{
   console.log('finished');
 });
 ```
@@ -47,8 +46,7 @@ let {PythonShell} = require('python-shell')
 ```typescript
 import {PythonShell} from 'python-shell';
 
-PythonShell.run('my_script.py', null, function (err) {
-  if (err) throw err;
+PythonShell.run('my_script.py', null).then(messages=>{
   console.log('finished');
 });
 ```
@@ -68,8 +66,7 @@ let options = {
   args: ['value1', 'value2', 'value3']
 };
 
-PythonShell.run('my_script.py', options, function (err, results) {
-  if (err) throw err;
+PythonShell.run('my_script.py', options).then(messages=>{
   // results is an array consisting of messages collected during execution
   console.log('results: %j', results);
 });
@@ -205,32 +202,28 @@ Example:
 PythonShell.defaultOptions = { scriptPath: '../scripts' };
 ```
 
-#### `#run(script, options, callback)`
+#### `#run(script, options)`
 
-Runs the Python script and invokes `callback` with the results. The callback contains the execution error (if any) as well as an array of messages emitted from the Python script.
-
-This method is also returning the `PythonShell` instance.
+Runs the Python script and returns a promise. When you handle the promise the argument will be an array of messages emitted from the Python script.
 
 Example:
 
 ```typescript
 // run a simple script
-PythonShell.run('script.py', null, function (err, results) {
+PythonShell.run('script.py', null).then(results => {
   // script finished
 });
 ```
 
-#### `#runString(code, options, callback)`
+#### `#runString(code, options)`
 
-Runs the Python code and invokes `callback` with the results. The callback contains the execution error (if any) as well as an array of messages emitted from the Python script.
-
-This method is also returning the `PythonShell` instance.
+Runs the Python script and returns a promise. When you handle the promise the argument will be an array of messages emitted from the Python script.
 
 Example:
 
 ```typescript
-// run a simple script
-PythonShell.runString('x=1;print(x)', null, function (err, results) {
+// run some simple code
+PythonShell.runString('x=1;print(x)', null).then(messages=>{
   // script finished
 });
 ```
@@ -247,7 +240,7 @@ Promise is rejected if there is a syntax error.
 
 #### `#getVersion(pythonPath?:string)`
 
-Returns the python version. Optional pythonPath param to get the version 
+Returns the python version as a promise. Optional pythonPath param to get the version 
 of a specific python interpreter.
 
 #### `#getVersionSync(pythonPath?:string)`

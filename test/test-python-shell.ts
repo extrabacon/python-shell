@@ -117,17 +117,19 @@ describe('PythonShell', function () {
         before(() => {
             PythonShell.defaultOptions = {};
         })
-        it('should be able to execute a string of python code using callbacks', function (done) {
-            let pythonshell = PythonShell.runString('print("hello");print("world")', null, function (err, results) {
-                if (err) return done(err);
+        it('should be able to execute a string of python code', function (done) {
+            PythonShell.runString('print("hello");print("world")', null).then((results) => {
                 results.should.be.an.Array().and.have.lengthOf(2);
                 results.should.eql(['hello', 'world']);
                 done();
             });
-
-            pythonshell.should.be.an.instanceOf(PythonShell);
         });
         it('should be able to execute a string of python code using promises', async function () {
+            let results = await PythonShell.runString('print("hello");print("world")');
+            results.should.be.an.Array().and.have.lengthOf(2);
+            results.should.eql(['hello', 'world']);
+        });
+        it('should be able to execute a string of python code async', async function () {
             let results = await PythonShell.runString('print("hello");print("world")');
             results.should.be.an.Array().and.have.lengthOf(2);
             results.should.eql(['hello', 'world']);
@@ -144,14 +146,13 @@ describe('PythonShell', function () {
         it('should run the script and return output data using callbacks', function (done) {
             PythonShell.run('echo_args.py', {
                 args: ['hello', 'world']
-            }, function (err, results) {
-                if (err) return done(err);
+            }).then((results) => {
                 results.should.be.an.Array().and.have.lengthOf(2);
                 results.should.eql(['hello', 'world']);
                 done();
             });
         });
-        it('should run the script and return output data using promise', async function () {
+        it('should run the script and return output data async', async function () {
             let results = await PythonShell.run('echo_args.py', {
                 args: ['hello', 'world']
             });
@@ -159,13 +160,13 @@ describe('PythonShell', function () {
             results.should.eql(['hello', 'world']);
         });
         it('should try to run the script and fail appropriately', function (done) {
-            PythonShell.run('unknown_script.py', null, function (err, results) {
+            PythonShell.run('unknown_script.py', null).catch((err) => {
                 err.should.be.an.Error;
                 err.exitCode.should.be.exactly(2);
                 done();
             });
         });
-        it('should try to run the script and fail appropriately', async function () {
+        it('should try to run the script and fail appropriately - async', async function () {
             try {
                 let results = await PythonShell.run('unknown_script.py');
                 throw new Error(`should not get here because the script should fail` + results);
@@ -175,14 +176,16 @@ describe('PythonShell', function () {
             }
         });
         it('should include both output and error', function (done) {
-            PythonShell.run('echo_hi_then_error.py', null, function (err, results) {
-                err.should.be.an.Error;
-                results.should.eql(['hi'])
-                done();
+            PythonShell.run('echo_hi_then_error.py', null).then((results) => {
+                done("Error: This promise should never successfully resolve");
+            }).catch((err)=>{
+                err.logs.should.eql(['hi'])
+                err.should.be.an.Error
+                done()
             });
         });
         it('should run the script and fail with an extended stack trace', function (done) {
-            PythonShell.run('error.py', null, function (err, results) {
+            PythonShell.run('error.py', null).catch((err) => {
                 err.should.be.an.Error;
                 err.exitCode.should.be.exactly(1);
                 err.stack.should.containEql('----- Python Traceback -----');
@@ -190,7 +193,7 @@ describe('PythonShell', function () {
             });
         });
         it('should run the script and fail with an extended stack trace even when mode is binary', function (done) {
-            PythonShell.run('error.py', { mode: "binary" }, function (err, results) {
+            PythonShell.run('error.py', { mode: "binary" }).catch((err) => {
                 err.should.be.an.Error;
                 err.exitCode.should.be.exactly(1);
                 err.stack.should.containEql('----- Python Traceback -----');
@@ -210,7 +213,7 @@ describe('PythonShell', function () {
                 }
             }
             function runSingleErrorScript(callback) {
-                PythonShell.run('error.py', null, function (err, results) {
+                PythonShell.run('error.py', null).catch((err) => {
                     err.should.be.an.Error;
                     err.exitCode.should.be.exactly(1);
                     err.stack.should.containEql('----- Python Traceback -----');
@@ -234,8 +237,7 @@ describe('PythonShell', function () {
             function runSingleScript(callback) {
                 PythonShell.run('echo_args.py', {
                     args: ['hello', 'world']
-                }, function (err, results) {
-                    if (err) return done(err);
+                }).then((results)=> {
                     results.should.be.an.Array().and.have.lengthOf(2);
                     results.should.eql(['hello', 'world']);
                     callback();
@@ -249,14 +251,11 @@ describe('PythonShell', function () {
 
             PythonShell.run('-m', {
                 args: ['timeit', '-n 1', `'x=5'`]
-            }, function (err, results) {
-
+            }).then((results)=> {
                 PythonShell.defaultOptions = {
                     // reset to match initial value
                     scriptPath: pythonFolder
                 };
-
-                if (err) return done(err);
                 results.should.be.an.Array();
                 results[0].should.be.an.String();
                 results[0].slice(0, 6).should.eql('1 loop');
@@ -522,8 +521,8 @@ describe('PythonShell', function () {
             let pyshell = new PythonShell('error.py');
             pyshell.on('pythonError', function (err) {
                 err.stack.should.containEql('----- Python Traceback -----');
-                err.stack.should.containEql('File "test' + sep + 'python' + sep + 'error.py", line 4');
-                err.stack.should.containEql('File "test' + sep + 'python' + sep + 'error.py", line 6');
+                err.stack.should.containEql('test' + sep + 'python' + sep + 'error.py", line 4');
+                err.stack.should.containEql('test' + sep + 'python' + sep + 'error.py", line 6');
                 done();
             });
         });
@@ -531,8 +530,8 @@ describe('PythonShell', function () {
             let pyshell = new PythonShell('error.py', { mode: 'json' });
             pyshell.on('pythonError', function (err) {
                 err.stack.should.containEql('----- Python Traceback -----');
-                err.stack.should.containEql('File "test' + sep + 'python' + sep + 'error.py", line 4');
-                err.stack.should.containEql('File "test' + sep + 'python' + sep + 'error.py", line 6');
+                err.stack.should.containEql('test' + sep + 'python' + sep + 'error.py", line 4');
+                err.stack.should.containEql('test' + sep + 'python' + sep + 'error.py", line 6');
                 done();
             });
         });
