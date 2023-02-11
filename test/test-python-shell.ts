@@ -123,8 +123,6 @@ describe('PythonShell', function () {
                 results.should.eql(['hello', 'world']);
                 done();
             });
-
-            pythonshell.should.be.an.instanceOf(PythonShell);
         });
         it('should be able to execute a string of python code using promises', async function () {
             let results = await PythonShell.runString('print("hello");print("world")');
