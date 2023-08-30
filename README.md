@@ -68,7 +68,7 @@ let options = {
 
 PythonShell.run('my_script.py', options).then(messages=>{
   // results is an array consisting of messages collected during execution
-  console.log('results: %j', results);
+  console.log('results: %j', messages);
 });
 ```
 
