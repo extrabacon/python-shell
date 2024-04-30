@@ -5,6 +5,11 @@ import { join, sep } from 'path'
 import { Readable, Transform, TransformCallback, Writable } from 'stream'
 import { writeFile, writeFileSync } from 'fs';
 import { promisify } from 'util';
+import { writeFileSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { PythonShell, Options } from 'python-shell';
+
 
 function toArray<T>(source?: T | T[]): T[] {
     if (typeof source === 'undefined' || source === null) {
@@ -334,21 +339,26 @@ export class PythonShell extends EventEmitter {
 
 
 
-    /**
-     * Runs the inputted string of python code and returns collected messages as a promise. DO NOT ALLOW UNTRUSTED USER INPUT HERE!
-     * @param code   The python code to execute
-     * @param options  The execution options
-     * @return a promise with the output from the python script
-     */
-     static runString(code: string, options?: Options) {
 
-        // put code in temp file
-        const randomInt = getRandomInt();
-        const filePath = tmpdir + sep + `pythonShellFile${randomInt}.py`
-        writeFileSync(filePath, code);
 
-        return PythonShell.run(filePath, options);
-    };
+/**
+ * Runs the inputted string of python code and returns collected messages as a promise. DO NOT ALLOW UNTRUSTED USER INPUT HERE!
+ * @param code The python code to execute
+ * @param options The execution options
+ * @returns A promise with the output from the python script
+ */
+static runString(code: string, options?: Options) {
+  // generate a unique file name
+  const fileName = `pythonShellFile${Date.now()}-${Math.floor(Math.random() * 100000)}.py`;
+  // join the file name with the temp directory path
+  const filePath = join(tmpdir(), fileName);
+  // write the code to the file stream
+  writeFileSync(filePath, code);
+
+  // run the Python script and return a promise with the output
+  return PythonShell.run(filePath, options);
+};
+
 
     static getVersion(pythonPath?: string) {
         if (!pythonPath) pythonPath = this.getPythonPath()
