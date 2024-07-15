@@ -162,7 +162,7 @@ export class PythonShell extends EventEmitter {
         let pythonOptions = toArray(options.pythonOptions);
         let scriptArgs = toArray(options.args);
 
-        this.scriptPath = join(options.scriptPath || '', scriptPath);
+        this.scriptPath = scriptPath;
         this.command = pythonOptions.concat(this.scriptPath, scriptArgs);
         this.mode = options.mode || 'text';
         this.formatter = resolve('format', options.formatter || this.mode);
@@ -170,6 +170,7 @@ export class PythonShell extends EventEmitter {
         // We don't expect users to ever format stderr as JSON so we default to text mode
         this.stderrParser = resolve('parse', options.stderrParser || 'text');
         this.terminated = false;
+        options.cwd = options.scriptPath;
         this.childProcess = spawn(pythonPath, this.command, options);
 
         ['stdout', 'stdin', 'stderr'].forEach(function (name) {
