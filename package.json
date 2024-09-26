@@ -15,10 +15,10 @@
     "@types/mocha": "^8.2.1",
     "@types/node": "^14.17.21",
     "@types/should": "^13.0.0",
-    "mocha": "^8.2.1",
+    "mocha": "^8.4.0",
     "mocha-appveyor-reporter": "^0.4.0",
     "should": "^13.2.1",
-    "ts-node": "^9.0.0",
+    "ts-node": "^9.1.1",
     "typescript": "^4.4.3"
   },
   "files": [
@@ -41,5 +41,11 @@
   "engines": {
     "node": ">=0.10"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@testdeck/mocha": "^0.3.3",
+    "chai": "^5.1.1",
+    "nyc": "^17.0.0",
+    "ts-mockito": "^2.6.1"
+  }
 }

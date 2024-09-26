@@ -286,24 +286,79 @@ export class PythonShell extends EventEmitter {
      * @returns rejects promise w/ string error output if syntax failure
      */
     static async checkSyntax(code: string) {
-        const randomInt = getRandomInt();
-        const filePath = tmpdir() + sep + `pythonShellSyntaxCheck${randomInt}.py`
-
-        const writeFilePromise = promisify(writeFile)
-        return writeFilePromise(filePath, code).then(() => {
-            return this.checkSyntaxFile(filePath)
-        })
+        const pythonPath = this.getPythonPath()
+        // Remember: x=5#\'\"\`_-~!@\$%^^^&*()=+,^<.^>/?{}[]\\^|;:
+        const formattedCode = this.formatStringForConsole(code)
+        let compileCommand = `${pythonPath} -c "compile('${formattedCode}', '', 'exec');"`
+        return execPromise(compileCommand)
     }
 
     static getPythonPath() {
         return this.defaultOptions.pythonPath ? this.defaultOptions.pythonPath : this.defaultPythonPath;
     }
 
+
     /**
-     * checks syntax without executing code
+     * A helper function used to format strings to be fed for console, by escaping all of the required characters
+     * This is because:
+     * 1. The code will be run in python via the command line, which means quotation marks & etc will need to be escaped
+     * 2. The code will also be run in the command line, which means any characters such as | (the pipe command) will be treated as if
+     *    a command line prompt, hence it also needs to be escaped
+     * 
+     * @param cmd   The command to be formatted
+     */
+    static formatStringForConsole(cmd: string) {
+
+        let char = ""
+        let nextChar = ""
+        let outString = ""
+
+        // The characters in both python and command line we want to exclude
+        const pythonChars = ["\'", "\"", "\$", "\\"]
+        const cmdLineChars = ["^", "&", "<", ">", "|"]
+
+        // Loop for all but last character
+        for (let i = 0; i < cmd.length - 1; i++) {
+            // Manually perform the checks
+            char = cmd.charAt(i)
+            nextChar = cmd.charAt(i + 1)
+
+            if (pythonChars.includes(char)) {
+                // If character is part of the python set, escape it with \, except for new lines
+                if (char == "\\" && nextChar == "n") {
+                    outString = outString + char
+                } else {
+                    outString = outString + `\\${char}`
+                }
+            } else if (cmdLineChars.includes(char)) {
+                // If character is part of the command line, escape it with ^
+                outString = outString + `^${char}`
+            } else {
+                outString = outString + char
+            }
+        }
+
+        // Do last character
+        char = cmd.charAt(cmd.length - 1)
+        if (pythonChars.includes(char)) {
+            outString = outString + `\\${char}`
+        } else if (cmdLineChars.includes(char)) {
+            outString = outString + `^${char}`
+        } else {
+            outString = outString + char
+        }
+
+        return outString
+
+    }
+
+
+    /**
+     * checks syntax of a file without executing code
      * @returns {Promise} rejects w/ stderr if syntax failure
      */
     static async checkSyntaxFile(filePath: string) {
+
         const pythonPath = this.getPythonPath()
         let compileCommand = `${pythonPath} -m py_compile ${filePath}`
         return execPromise(compileCommand)

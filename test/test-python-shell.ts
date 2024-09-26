@@ -75,9 +75,6 @@ describe('PythonShell', function () {
 
     describe('#checkSyntax(code:string)', function () {
 
-        // note checkSyntax is a wrapper around checkSyntaxFile
-        // so this tests checkSyntaxFile as well
-
         it('should check syntax', function (done) {
             PythonShell.checkSyntax("x=1").then(() => {
                 done();
@@ -89,6 +86,65 @@ describe('PythonShell', function () {
                 done();
             })
         })
+
+        it('should check syntax with special characters', function (done) {
+            PythonShell.checkSyntax("x=5#'\"`_-~!@$%&^*()=+,<.>/?{}[]\\|;:").then(() => {
+                done();
+            })
+        })
+
+        it('should check syntax with special characters with some complexity to the formatting', function (done) {
+            PythonShell.checkSyntax("x='text\"'\\ny='\\'OnlyFirstQuotation'\\nz='OnlyEndQuotation\"'\\nif (x != y):\\n    z = '`<>'").then(() => {
+                done();
+            })
+        })
+
+        it('should fail if complex special character string is wrong', function (done) {
+            PythonShell.checkSyntax("x='text\"'\\ny=''OnlyFirstQuotation'\\nz='OnlyEndQuotation\"'\\nif (x != y):\\n    z = '`<>'").catch(() => {
+                done();
+            })
+        })
+
+    })
+
+    describe('#checkSyntaxFile(filePath:string)', function () {
+
+        it('should check syntax from file', function (done) {
+            PythonShell.checkSyntaxFile("test/python/echo_text.py").then(() => {
+                done();
+            })
+        })
+
+        it('should invalidate bad syntax from bad_syntax_equals', function (done) {
+            PythonShell.checkSyntaxFile("test/python/bad_syntax_equals.py").catch(() => {
+                done();
+            })
+        })
+
+        it('should invalidate bad syntax from bad_syntax_indentation', function (done) {
+            PythonShell.checkSyntaxFile("test/python/bad_syntax_indentation.py").catch(() => {
+                done();
+            })
+        })
+
+        it('should invalidate bad syntax from bad_syntax_function', function (done) {
+            PythonShell.checkSyntaxFile("test/python/bad_syntax_function.py").catch(() => {
+                done();
+            })
+        })
+
+        it('should fail when invalid file location given', function (done) {
+            PythonShell.checkSyntaxFile("test/python/not_exist.py").catch(() => {
+                done();
+            })
+        })
+
+        it('should succeed when file has special characters', function (done) {
+            PythonShell.checkSyntaxFile("test/python/special_characters.py").then(() => {
+                done();
+            })
+        })
+
     })
 
     // #158 these tests are failing on appveyor windows node 8/10 python 2/3
