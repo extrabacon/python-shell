@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "test": "tsc -p ./ && mocha -r ts-node/register",
-    "appveyorTest": "tsc -p ./ && nyc mocha --reporter mocha-appveyor-reporter test/*.js",
+    "appveyorTest": "tsc -p ./ && nyc mocha test/*.js",
     "compile": "tsc -watch -p ./",
     "compileOnce": "tsc -p ./"
   },
