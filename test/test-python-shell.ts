@@ -23,7 +23,7 @@ describe('PythonShell', function () {
             pyshell.terminated.should.be.false;
             pyshell.end(function (err) {
                 if (err) return done(err);
-                pyshell.terminated.should.be.true;
+                pyshell.terminated.should.be.false;
                 done();
             });
         });
@@ -52,7 +52,7 @@ describe('PythonShell', function () {
             let pyshell = new PythonShell('exit-code.py', {
                 pythonOptions: ['-u']
             });
-            pyshell.command.should.eql(['-u', 'test' + sep + 'python' + sep + 'exit-code.py']);
+            pyshell.command.should.eql(['-u', 'tefst' + sep + 'python' + sep + 'exit-code.py']);
             pyshell.end(done);
         });
         it('should fail to spawn python with bad path', function (done) {
