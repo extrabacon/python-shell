@@ -1,8 +1,9 @@
 import * as should from 'should';
 import { PythonShell } from '..';
 import { sep, join } from 'path';
-import { EOL as newline } from 'os';
+import { EOL as newline, tmpdir } from 'os';
 import { chdir, cwd } from 'process';
+import { readdirSync } from 'fs';
 
 describe('PythonShell', function () {
   const pythonFolder = 'test/python';
@@ -95,6 +96,66 @@ describe('PythonShell', function () {
       PythonShell.checkSyntax('x=').catch(() => {
         done();
       });
+    });
+  });
+
+  describe('#checkSyntaxStdin(code:string)', function () {
+    it('should not create temp files', function (done) {
+      const tmpFiles = readdirSync(tmpdir()).filter((f) =>
+        f.startsWith('pythonShellSyntaxCheck'),
+      );
+      const beforeCount = tmpFiles.length;
+
+      PythonShell.checkSyntaxStdin('x=1').then(() => {
+        const afterFiles = readdirSync(tmpdir()).filter((f) =>
+          f.startsWith('pythonShellSyntaxCheck'),
+        );
+        afterFiles.length.should.equal(beforeCount);
+        done();
+      });
+    });
+    it('should check syntax via stdin', function (done) {
+      PythonShell.checkSyntaxStdin('x=1').then(() => {
+        done();
+      });
+    });
+
+    it('should check multiline code via stdin', function (done) {
+      const code = `def hello():
+    print("world")
+hello()`;
+      PythonShell.checkSyntaxStdin(code).then(() => {
+        done();
+      });
+    });
+
+    it('should invalidate bad syntax via stdin', function (done) {
+      PythonShell.checkSyntaxStdin('x=').catch(() => {
+        done();
+      });
+    });
+
+    it('should invalidate syntax error in multiline code via stdin', function (done) {
+      const code = `def hello()
+    print("world")`;
+      PythonShell.checkSyntaxStdin(code).catch(() => {
+        done();
+      });
+    });
+
+    it('should use pythonOptions from defaultOptions', function (done) {
+      const originalOptions = PythonShell.defaultOptions;
+      PythonShell.defaultOptions = { pythonOptions: ['-B'] };
+
+      PythonShell.checkSyntaxStdin('x=1')
+        .then(() => {
+          PythonShell.defaultOptions = originalOptions;
+          done();
+        })
+        .catch((err) => {
+          PythonShell.defaultOptions = originalOptions;
+          done(err);
+        });
     });
   });
 

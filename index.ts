@@ -322,6 +322,48 @@ export class PythonShell extends EventEmitter {
     });
   }
 
+  /**
+   * checks syntax via stdin without writing to a temp file
+   * @param code The Python code to check
+   * @returns rejects promise w/ stderr if syntax failure
+   */
+  static checkSyntaxStdin(
+    code: string,
+  ): Promise<{ stdout: string; stderr: string }> {
+    return new Promise((resolve, reject) => {
+      const pythonPath = this.getPythonPath();
+      const child = spawn(pythonPath, [
+        '-c',
+        'import sys; compile(sys.stdin.read(), "<stdin>", "exec")',
+      ]);
+
+      const outputBuffers = { stdout: '', stderr: '' };
+
+      child.stdout.on('data', (data) => {
+        outputBuffers.stdout += data.toString();
+      });
+
+      child.stderr.on('data', (data) => {
+        outputBuffers.stderr += data.toString();
+      });
+
+      child.on('close', (exitCode) => {
+        if (exitCode === 0) {
+          resolve(outputBuffers);
+          return;
+        }
+        reject(outputBuffers.stderr || `Process exited with code ${exitCode}`);
+      });
+
+      child.on('error', (err) => {
+        reject(err);
+      });
+
+      child.stdin.write(code);
+      child.stdin.end();
+    });
+  }
+
   static getPythonPath() {
     return this.defaultOptions.pythonPath
       ? this.defaultOptions.pythonPath
