@@ -1,7 +1,8 @@
 import * as should from 'should';
 import { PythonShell } from '..';
 import { sep, join } from 'path';
-import { EOL as newline } from 'os';
+import { EOL as newline, tmpdir } from 'os';
+import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { chdir, cwd } from 'process';
 
 describe('PythonShell', function () {
@@ -123,6 +124,36 @@ describe('PythonShell', function () {
   describe('#runString(script, options)', function () {
     before(() => {
       PythonShell.defaultOptions = {};
+    });
+    it('should create a temporary file in the OS temp directory before running', async function () {
+      const originalRun = PythonShell.run;
+      let capturedScriptPath = '';
+      let capturedOptions = null;
+
+      // Avoid spawning Python: we only verify temp file path generation and handoff.
+      (PythonShell as any).run = async (scriptPath, options) => {
+        capturedScriptPath = scriptPath;
+        capturedOptions = options;
+        return [];
+      };
+
+      const options = { mode: 'text' as const };
+      const code = 'print(\"hello from runString\")';
+
+      try {
+        await PythonShell.runString(code, options);
+
+        capturedScriptPath.should.startWith(tmpdir() + sep + 'pythonShellFile');
+        capturedScriptPath.should.endWith('.py');
+        existsSync(capturedScriptPath).should.be.true();
+        readFileSync(capturedScriptPath, 'utf8').should.eql(code);
+        capturedOptions.should.eql(options);
+      } finally {
+        if (capturedScriptPath && existsSync(capturedScriptPath)) {
+          unlinkSync(capturedScriptPath);
+        }
+        (PythonShell as any).run = originalRun;
+      }
     });
     it('should be able to execute a string of python code', function (done) {
       PythonShell.runString('print("hello");print("world")', null).then(

@@ -371,7 +371,7 @@ export class PythonShell extends EventEmitter {
   static runString(code: string, options?: Options) {
     // put code in temp file
     const randomInt = getRandomInt();
-    const filePath = tmpdir + sep + `pythonShellFile${randomInt}.py`;
+    const filePath = tmpdir() + sep + `pythonShellFile${randomInt}.py`;
     writeFileSync(filePath, code);
 
     return PythonShell.run(filePath, options);
