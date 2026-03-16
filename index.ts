@@ -3,13 +3,13 @@ import {
   ChildProcess,
   spawn,
   SpawnOptions,
-  exec,
-  execSync,
+  execFile,
+  execFileSync,
 } from 'child_process';
 import { EOL as newline, tmpdir } from 'os';
 import { join, sep } from 'path';
 import { Readable, Transform, TransformCallback, Writable } from 'stream';
-import { writeFile, writeFileSync } from 'fs';
+import { writeFile, writeFileSync, unlink } from 'fs';
 import { promisify } from 'util';
 
 function toArray<T>(source?: T | T[]): T[] {
@@ -21,28 +21,8 @@ function toArray<T>(source?: T | T[]): T[] {
   return source;
 }
 
-/**
- * adds arguments as properties to obj
- */
-function extend(obj: {}, ...args) {
-  Array.prototype.slice.call(arguments, 1).forEach(function (source) {
-    if (source) {
-      for (let key in source) {
-        obj[key] = source[key];
-      }
-    }
-  });
-  return obj;
-}
-
-/**
- * gets a random int from 0-10000000000
- */
-function getRandomInt() {
-  return Math.floor(Math.random() * 10000000000);
-}
-
-const execPromise = promisify(exec);
+const execFilePromise = promisify(execFile);
+const unlinkPromise = promisify(unlink);
 
 export interface Options extends SpawnOptions {
   /**
@@ -171,7 +151,7 @@ export class PythonShell extends EventEmitter {
     let errorData = '';
     EventEmitter.call(this);
 
-    options = <Options>extend({}, PythonShell.defaultOptions, options);
+    options = <Options>Object.assign({}, PythonShell.defaultOptions, options);
     let pythonPath: string;
     if (!options.pythonPath) {
       pythonPath = PythonShell.defaultPythonPath;
@@ -266,7 +246,7 @@ export class PythonShell extends EventEmitter {
             'process exited with code ' + self.exitCode,
           );
         }
-        err = <PythonShellError>extend(err, {
+        Object.assign(err, {
           executable: pythonPath,
           options: pythonOptions.length ? pythonOptions : null,
           script: self.scriptPath,
@@ -313,12 +293,14 @@ export class PythonShell extends EventEmitter {
    * @returns rejects promise w/ string error output if syntax failure
    */
   static async checkSyntax(code: string) {
-    const randomInt = getRandomInt();
-    const filePath = tmpdir() + sep + `pythonShellSyntaxCheck${randomInt}.py`;
+    const filePath =
+      tmpdir() + sep + `pythonShellSyntaxCheck${Date.now()}.py`;
 
     const writeFilePromise = promisify(writeFile);
     return writeFilePromise(filePath, code).then(() => {
-      return this.checkSyntaxFile(filePath);
+      return this.checkSyntaxFile(filePath).finally(() => {
+        unlinkPromise(filePath).catch(() => {});
+      });
     });
   }
 
@@ -334,8 +316,7 @@ export class PythonShell extends EventEmitter {
    */
   static async checkSyntaxFile(filePath: string) {
     const pythonPath = this.getPythonPath();
-    let compileCommand = `${pythonPath} -m py_compile ${filePath}`;
-    return execPromise(compileCommand);
+    return execFilePromise(pythonPath, ['-m', 'py_compile', filePath]);
   }
 
   /**
@@ -370,21 +351,22 @@ export class PythonShell extends EventEmitter {
    */
   static runString(code: string, options?: Options) {
     // put code in temp file
-    const randomInt = getRandomInt();
-    const filePath = tmpdir + sep + `pythonShellFile${randomInt}.py`;
+    const filePath = tmpdir() + sep + `pythonShellFile${Date.now()}.py`;
     writeFileSync(filePath, code);
 
-    return PythonShell.run(filePath, options);
+    return PythonShell.run(filePath, options).finally(() => {
+      unlinkPromise(filePath).catch(() => {});
+    });
   }
 
   static getVersion(pythonPath?: string) {
     if (!pythonPath) pythonPath = this.getPythonPath();
-    return execPromise(pythonPath + ' --version');
+    return execFilePromise(pythonPath, ['--version']);
   }
 
   static getVersionSync(pythonPath?: string) {
     if (!pythonPath) pythonPath = this.getPythonPath();
-    return execSync(pythonPath + ' --version').toString();
+    return execFileSync(pythonPath, ['--version']).toString();
   }
 
   /**
