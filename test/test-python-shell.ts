@@ -614,6 +614,15 @@ describe('PythonShell', function () {
         done();
       });
     });
+    it('should parse traceback when stderr has prefixed logs', function (done) {
+      let pyshell = new PythonShell('error_with_stderr_prefix.py');
+      pyshell.on('pythonError', function (err) {
+        err.message.should.be.equal('Exception: Error sample');
+        err.should.have.property('traceback');
+        err.traceback.should.containEql('Traceback (most recent call last)');
+        done();
+      });
+    });
   });
 
   describe('.kill()', function () {

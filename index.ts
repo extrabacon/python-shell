@@ -395,13 +395,16 @@ export class PythonShell extends EventEmitter {
   private parseError(data: string | Buffer) {
     let text = '' + data;
     let error: PythonShellError;
+    const tracebackHeader = 'Traceback (most recent call last):';
+    const tracebackStart = text.indexOf(tracebackHeader);
 
-    if (/^Traceback/.test(text)) {
-      // traceback data is available
-      let lines = text.trim().split(newline);
+    if (tracebackStart >= 0) {
+      // Traceback can be prefixed by stderr logs, so parse from the traceback header.
+      const tracebackText = text.slice(tracebackStart).trim();
+      let lines = tracebackText.split(newline);
       let exception = lines.pop();
       error = new PythonShellError(exception);
-      error.traceback = data;
+      error.traceback = tracebackText;
       // extend stack trace
       error.stack +=
         newline + '    ----- Python Traceback -----' + newline + '  ';
