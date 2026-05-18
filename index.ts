@@ -197,9 +197,9 @@ export class PythonShell extends EventEmitter {
     });
 
     // Node buffers stdout&stderr in batches regardless of newline placement
-    // This is troublesome if you want to recieve distinct individual messages
-    // for example JSON parsing breaks if it recieves partial JSON
-    // so we use newlineTransformer to emit each batch seperated by newline
+    // This is troublesome if you want to receive distinct individual messages
+    // for example JSON parsing breaks if it receives partial JSON
+    // so we use newlineTransformer to emit each batch separated by newline
     if (this.parser && this.stdout) {
       if (!stdoutSplitter) stdoutSplitter = new NewlineTransformer();
       // note that setting the encoding turns the chunk into a string
