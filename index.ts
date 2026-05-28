@@ -66,6 +66,10 @@ export interface Options extends SpawnOptions {
    * arguments to your program
    */
   args?: string[];
+  /**
+   * if enabled, \r (carriage return) characters will trigger a 'crdata' event
+   */
+  handleCarriageReturn?: boolean;
 }
 
 export class PythonShellError extends Error {
@@ -83,12 +87,43 @@ export class PythonShellErrorWithLogs extends PythonShellError {
 export class NewlineTransformer extends Transform {
   // NewlineTransformer: Megatron's little known once-removed cousin
   private _lastLineData: string;
+  private _handleCr: boolean;
+  constructor(handleCr?: boolean) {
+    super();
+    this._handleCr = !!handleCr;
+  }
   _transform(chunk: any, encoding: string, callback: TransformCallback) {
     let data: string = chunk.toString();
     if (this._lastLineData) data = this._lastLineData + data;
-    const lines = data.split(newline);
-    this._lastLineData = lines.pop();
-    lines.forEach(this.push.bind(this));
+    if (this._handleCr) {
+      let current = '';
+      for (let i = 0; i < data.length; i++) {
+        const ch = data[i];
+        if (ch === '\r') {
+          if (i + 1 < data.length && data[i + 1] === '\n') {
+            // \r\n — Windows line ending: emit as both cr and newline
+            this.emit('cr', current);
+            this.push(current);
+            i++;
+          } else {
+            // \r alone — progress update: emit as cr only
+            this.emit('cr', current);
+          }
+          current = '';
+        } else if (ch === '\n') {
+          // \n alone — regular line ending: push as newline message
+          this.push(current);
+          current = '';
+        } else {
+          current += ch;
+        }
+      }
+      this._lastLineData = current;
+    } else {
+      const lines = data.split(newline);
+      this._lastLineData = lines.pop();
+      lines.forEach(this.push.bind(this));
+    }
     callback();
   }
   _flush(done: TransformCallback) {
@@ -201,22 +236,32 @@ export class PythonShell extends EventEmitter {
     // for example JSON parsing breaks if it recieves partial JSON
     // so we use newlineTransformer to emit each batch seperated by newline
     if (this.parser && this.stdout) {
-      if (!stdoutSplitter) stdoutSplitter = new NewlineTransformer();
+      if (!stdoutSplitter) stdoutSplitter = new NewlineTransformer(options.handleCarriageReturn);
       // note that setting the encoding turns the chunk into a string
       stdoutSplitter.setEncoding(options.encoding || 'utf8');
       this.stdout.pipe(stdoutSplitter).on('data', (chunk: string) => {
         this.emit('message', self.parser(chunk));
       });
+      if (options.handleCarriageReturn) {
+        stdoutSplitter.on('cr', (chunk: string) => {
+          this.emit('crdata', self.parser(chunk));
+        });
+      }
     }
 
     // listen to stderr and emit errors for incoming data
     if (this.stderrParser && this.stderr) {
-      if (!stderrSplitter) stderrSplitter = new NewlineTransformer();
+      if (!stderrSplitter) stderrSplitter = new NewlineTransformer(options.handleCarriageReturn);
       // note that setting the encoding turns the chunk into a string
       stderrSplitter.setEncoding(options.encoding || 'utf8');
       this.stderr.pipe(stderrSplitter).on('data', (chunk: string) => {
         this.emit('stderr', self.stderrParser(chunk));
       });
+      if (options.handleCarriageReturn) {
+        stderrSplitter.on('cr', (chunk: string) => {
+          this.emit('crdata', self.stderrParser(chunk));
+        });
+      }
     }
 
     if (this.stderr) {
@@ -491,6 +536,16 @@ export interface PythonShell {
   prependListener(event: 'stderr', listener: (parsedChunk: any) => void): this;
   prependOnceListener(
     event: 'stderr',
+    listener: (parsedChunk: any) => void,
+  ): this;
+
+  addListener(event: 'crdata', listener: (parsedChunk: any) => void): this;
+  emit(event: 'crdata', parsedChunk: any): boolean;
+  on(event: 'crdata', listener: (parsedChunk: any) => void): this;
+  once(event: 'crdata', listener: (parsedChunk: any) => void): this;
+  prependListener(event: 'crdata', listener: (parsedChunk: any) => void): this;
+  prependOnceListener(
+    event: 'crdata',
     listener: (parsedChunk: any) => void,
   ): this;
 
