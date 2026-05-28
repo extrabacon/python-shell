@@ -467,6 +467,38 @@ describe('PythonShell', function () {
         .send('world!')
         .end(done);
     });
+    it('should emit "crdata" events for carriage return terminated output', function (done) {
+      let pyshell = new PythonShell('echo_progress.py', {
+        mode: 'text',
+        handleCarriageReturn: true,
+      });
+      let crdataMessages: string[] = [];
+      let messages: string[] = [];
+      pyshell
+        .on('crdata', (data) => {
+          crdataMessages.push(data);
+        })
+        .on('message', (data) => {
+          messages.push(data);
+        })
+        .on('close', () => {
+          crdataMessages.should.eql(['Progress: 50%', 'Progress: 100%']);
+          messages.should.eql(['Done']);
+          done();
+        });
+    });
+    it('should not emit "crdata" events when handleCarriageReturn is disabled', function (done) {
+      let pyshell = new PythonShell('echo_progress.py', {
+        mode: 'text',
+      });
+      pyshell
+        .on('crdata', () => {
+          done(new Error('should not emit crdata events when disabled'));
+        })
+        .on('close', () => {
+          done();
+        });
+    });
   });
 
   describe('stderr', function () {
