@@ -101,8 +101,7 @@ export class NewlineTransformer extends Transform {
         const ch = data[i];
         if (ch === '\r') {
           if (i + 1 < data.length && data[i + 1] === '\n') {
-            // \r\n — Windows line ending: emit as both cr and newline
-            this.emit('cr', current);
+            // \r\n — Windows line ending: treat as regular newline
             this.push(current);
             i++;
           } else {
