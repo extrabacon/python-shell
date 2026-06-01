@@ -415,6 +415,30 @@ describe('PythonShell', function () {
         })
         .end(done);
     });
+    it('should emit parseError when JSON output cannot be parsed', function (done) {
+      let pyshell = new PythonShell('invalid_json.py', {
+        mode: 'json',
+      });
+      pyshell
+        .on('parseError', function (err) {
+          err.name.should.be.exactly('PythonShellParseError');
+          err.data.should.be.exactly('not json');
+          err.originalError.should.be.instanceOf(SyntaxError);
+        })
+        .end(function (err) {
+          err.name.should.be.exactly('PythonShellParseError');
+          done();
+        });
+    });
+    it('should reject run() when JSON output cannot be parsed', async function () {
+      try {
+        await PythonShell.run('invalid_json.py', { mode: 'json' });
+        throw new Error('Expected run() to reject invalid JSON output');
+      } catch (err) {
+        err.name.should.be.exactly('PythonShellParseError');
+        err.data.should.be.exactly('not json');
+      }
+    });
     it('should properly buffer partial messages', function (done) {
       // echo_text_with_newline_control echoes text with $'s replaced with newlines
       let pyshell = new PythonShell('echo_text_with_newline_control.py', {

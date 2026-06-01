@@ -77,6 +77,18 @@ export class PythonShellErrorWithLogs extends PythonShellError {
   logs: any[];
 }
 
+export class PythonShellParseError extends PythonShellError {
+  data: string;
+  originalError: Error;
+
+  constructor(data: string, originalError: Error) {
+    super('Error parsing PythonShell output: ' + originalError.message);
+    this.name = 'PythonShellParseError';
+    this.data = data;
+    this.originalError = originalError;
+  }
+}
+
 /**
  * Takes in a string stream and emits batches seperated by newlines
  */
@@ -169,6 +181,7 @@ export class PythonShell extends EventEmitter {
 
     let self = this;
     let errorData = '';
+    let parseError: PythonShellParseError;
     EventEmitter.call(this);
 
     options = <Options>extend({}, PythonShell.defaultOptions, options);
@@ -205,7 +218,14 @@ export class PythonShell extends EventEmitter {
       // note that setting the encoding turns the chunk into a string
       stdoutSplitter.setEncoding(options.encoding || 'utf8');
       this.stdout.pipe(stdoutSplitter).on('data', (chunk: string) => {
-        this.emit('message', self.parser(chunk));
+        let parsedChunk;
+        try {
+          parsedChunk = self.parser(chunk);
+        } catch (err) {
+          emitParseError(err, chunk);
+          return;
+        }
+        this.emit('message', parsedChunk);
       });
     }
 
@@ -249,6 +269,15 @@ export class PythonShell extends EventEmitter {
       terminateIfNeeded();
     });
 
+    function emitParseError(err: unknown, data: string) {
+      let originalError = err instanceof Error ? err : new Error('' + err);
+      let outputError = new PythonShellParseError(data, originalError);
+      if (!parseError) {
+        parseError = outputError;
+      }
+      self.emit('parseError', outputError);
+    }
+
     function terminateIfNeeded() {
       if (
         !self.stderrHasEnded ||
@@ -277,6 +306,8 @@ export class PythonShell extends EventEmitter {
         if (self.listeners('pythonError').length || !self._endCallback) {
           self.emit('pythonError', err);
         }
+      } else if (parseError) {
+        err = parseError;
       }
 
       self.terminated = true;
@@ -531,5 +562,27 @@ export interface PythonShell {
   prependOnceListener(
     event: 'pythonError',
     listener: (error: PythonShellError) => void,
+  ): this;
+
+  addListener(
+    event: 'parseError',
+    listener: (error: PythonShellParseError) => void,
+  ): this;
+  emit(event: 'parseError', error: PythonShellParseError): boolean;
+  on(
+    event: 'parseError',
+    listener: (error: PythonShellParseError) => void,
+  ): this;
+  once(
+    event: 'parseError',
+    listener: (error: PythonShellParseError) => void,
+  ): this;
+  prependListener(
+    event: 'parseError',
+    listener: (error: PythonShellParseError) => void,
+  ): this;
+  prependOnceListener(
+    event: 'parseError',
+    listener: (error: PythonShellParseError) => void,
   ): this;
 }
