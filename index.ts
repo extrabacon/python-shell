@@ -193,6 +193,7 @@ export class PythonShell extends EventEmitter {
       self[name] = self.childProcess[name];
       self.parser &&
         self[name] &&
+        typeof self[name].setEncoding === 'function' &&
         self[name].setEncoding(options.encoding || 'utf8');
     });
 
