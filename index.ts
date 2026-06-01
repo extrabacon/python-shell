@@ -3,8 +3,8 @@ import {
   ChildProcess,
   spawn,
   SpawnOptions,
-  exec,
-  execSync,
+  execFile,
+  execFileSync,
 } from 'child_process';
 import { EOL as newline, tmpdir } from 'os';
 import { join, sep } from 'path';
@@ -42,7 +42,7 @@ function getRandomInt() {
   return Math.floor(Math.random() * 10000000000);
 }
 
-const execPromise = promisify(exec);
+const execFilePromise = promisify(execFile);
 
 export interface Options extends SpawnOptions {
   /**
@@ -334,8 +334,7 @@ export class PythonShell extends EventEmitter {
    */
   static async checkSyntaxFile(filePath: string) {
     const pythonPath = this.getPythonPath();
-    let compileCommand = `${pythonPath} -m py_compile ${filePath}`;
-    return execPromise(compileCommand);
+    return execFilePromise(pythonPath, ['-m', 'py_compile', filePath]);
   }
 
   /**
@@ -379,12 +378,12 @@ export class PythonShell extends EventEmitter {
 
   static getVersion(pythonPath?: string) {
     if (!pythonPath) pythonPath = this.getPythonPath();
-    return execPromise(pythonPath + ' --version');
+    return execFilePromise(pythonPath, ['--version']);
   }
 
   static getVersionSync(pythonPath?: string) {
     if (!pythonPath) pythonPath = this.getPythonPath();
-    return execSync(pythonPath + ' --version').toString();
+    return execFileSync(pythonPath, ['--version']).toString();
   }
 
   /**

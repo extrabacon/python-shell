@@ -1,8 +1,16 @@
 import * as should from 'should';
 import { PythonShell } from '..';
 import { sep, join } from 'path';
-import { EOL as newline } from 'os';
+import { EOL as newline, tmpdir } from 'os';
 import { chdir, cwd } from 'process';
+import {
+  chmodSync,
+  copyFileSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'fs';
 
 describe('PythonShell', function () {
   const pythonFolder = 'test/python';
@@ -95,6 +103,64 @@ describe('PythonShell', function () {
       PythonShell.checkSyntax('x=').catch(() => {
         done();
       });
+    });
+    it('should check syntax for files whose path contains spaces', async function () {
+      const tempDirectory = mkdtempSync(join(tmpdir(), 'python shell syntax '));
+      const filePath = join(tempDirectory, 'valid script.py');
+
+      try {
+        writeFileSync(filePath, 'x = 1\n');
+        const result = await PythonShell.checkSyntaxFile(filePath);
+        result.stderr.should.eql('');
+      } finally {
+        rmSync(tempDirectory, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('#getVersion(pythonPath)', function () {
+    function createCurrentExecutableAtSpacedPath() {
+      const tempDirectory = mkdtempSync(
+        join(tmpdir(), 'python shell version '),
+      );
+      const executablePath = join(
+        tempDirectory,
+        process.platform === 'win32' ? 'fake python.exe' : 'fake python',
+      );
+
+      try {
+        symlinkSync(process.execPath, executablePath);
+      } catch (_) {
+        copyFileSync(process.execPath, executablePath);
+        if (process.platform !== 'win32') chmodSync(executablePath, 0o755);
+      }
+
+      return { tempDirectory, executablePath };
+    }
+
+    it('should get the version when the executable path contains spaces', async function () {
+      const { tempDirectory, executablePath } =
+        createCurrentExecutableAtSpacedPath();
+
+      try {
+        const result = await PythonShell.getVersion(executablePath);
+        result.stdout.trim().should.eql(process.version);
+      } finally {
+        rmSync(tempDirectory, { recursive: true, force: true });
+      }
+    });
+
+    it('should get the version synchronously when the executable path contains spaces', function () {
+      const { tempDirectory, executablePath } =
+        createCurrentExecutableAtSpacedPath();
+
+      try {
+        PythonShell.getVersionSync(executablePath)
+          .trim()
+          .should.eql(process.version);
+      } finally {
+        rmSync(tempDirectory, { recursive: true, force: true });
+      }
     });
   });
 
