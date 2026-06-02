@@ -1,8 +1,9 @@
 import * as should from 'should';
 import { PythonShell } from '..';
-import { sep, join } from 'path';
-import { EOL as newline } from 'os';
+import { basename, dirname, sep, join } from 'path';
+import { EOL as newline, tmpdir } from 'os';
 import { chdir, cwd } from 'process';
+import { readFileSync, unlinkSync } from 'fs';
 
 describe('PythonShell', function () {
   const pythonFolder = 'test/python';
@@ -146,6 +147,33 @@ describe('PythonShell', function () {
       );
       results.should.be.an.Array().and.have.lengthOf(2);
       results.should.eql(['hello', 'world']);
+    });
+    it('should write runString code to a temporary file', async function () {
+      const originalRun = PythonShell.run;
+      const options = { pythonPath: PythonShell.defaultPythonPath };
+      const code = 'print("hello from temp file")';
+      let capturedPath: string;
+      let capturedOptions: object;
+
+      PythonShell.run = ((scriptPath: string, runOptions: object) => {
+        capturedPath = scriptPath;
+        capturedOptions = runOptions;
+        return Promise.resolve(['ok']);
+      }) as typeof PythonShell.run;
+
+      try {
+        let results = await PythonShell.runString(code, options);
+
+        results.should.eql(['ok']);
+        dirname(capturedPath).should.eql(tmpdir());
+        basename(capturedPath).should.startWith('pythonShellFile');
+        basename(capturedPath).should.endWith('.py');
+        readFileSync(capturedPath, 'utf8').should.eql(code);
+        capturedOptions.should.equal(options);
+      } finally {
+        PythonShell.run = originalRun;
+        if (capturedPath) unlinkSync(capturedPath);
+      }
     });
     after(() => {
       PythonShell.defaultOptions = {
