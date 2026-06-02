@@ -171,6 +171,7 @@ Creates an instance of `PythonShell` and starts the Python process
   - `pythonOptions`: Array of option switches to pass to "python"
   - `scriptPath`: The default path where to look for scripts. Default is the current working directory.
   - `args`: Array of arguments to pass to the script
+  - `timeout`: Maximum execution time in milliseconds before the process is killed and the run rejects
 - `stdoutSplitter`: splits stdout into chunks, defaulting to splitting into newline-seperated lines
 - `stderrSplitter`: splits stderr into chunks, defaulting to splitting into newline-seperated lines
 
