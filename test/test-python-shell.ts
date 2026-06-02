@@ -68,6 +68,17 @@ describe('PythonShell', function () {
         done();
       });
     });
+    it('should clear timeout when python fails to spawn', function (done) {
+      let pyshell = new PythonShell('exit-code.py', {
+        pythonPath: 'foeisjofseij',
+        timeout: 10000,
+      });
+      pyshell.on('error', (err) => {
+        err.code.should.eql('ENOENT');
+        should((pyshell as any).timeoutId).be.null();
+        done();
+      });
+    });
     it('should spawn a Python process with script arguments', function (done) {
       let pyshell = new PythonShell('echo_args.py', {
         args: ['hello', 'world'],
@@ -214,6 +225,98 @@ describe('PythonShell', function () {
         err.should.be.an.Error;
         err.exitCode.should.be.exactly(1);
         err.stack.should.containEql('----- Python Traceback -----');
+        done();
+      });
+    });
+    it('should reject when the process exceeds the timeout', function (done) {
+      this.timeout(3000);
+      PythonShell.run('infinite_loop.py', { timeout: 100 }).then(
+        () => {
+          done(new Error('expected timeout rejection'));
+        },
+        (err) => {
+          err.should.be.an.Error;
+          err.message.should.be.exactly('process timed out after 100ms');
+          err.timeout.should.be.exactly(100);
+          done();
+        },
+      );
+    });
+    it('should reject when timeout expires after the process exits but before stdio closes', function (done) {
+      this.timeout(3000);
+      PythonShell.run('exit_with_open_stdout.py', { timeout: 100 }).then(
+        () => {
+          done(new Error('expected timeout rejection'));
+        },
+        (err) => {
+          err.should.be.an.Error;
+          err.message.should.be.exactly('process timed out after 100ms');
+          err.exitCode.should.be.exactly(0);
+          err.timeout.should.be.exactly(100);
+          done();
+        },
+      );
+    });
+    it('should reject when the process ignores the timeout signal', function (done) {
+      this.timeout(3000);
+      PythonShell.run('ignore_sigterm.py', { timeout: 100 }).then(
+        () => {
+          done(new Error('expected timeout rejection'));
+        },
+        (err) => {
+          err.should.be.an.Error;
+          err.message.should.be.exactly('process timed out after 100ms');
+          err.timeout.should.be.exactly(100);
+          done();
+        },
+      );
+    });
+    it('should flush buffered output before rejecting on timeout', function (done) {
+      this.timeout(3000);
+      PythonShell.run('print_partial_then_sleep.py', { timeout: 100 }).then(
+        () => {
+          done(new Error('expected timeout rejection'));
+        },
+        (err) => {
+          err.should.be.an.Error;
+          err.logs.should.eql(['partial output']);
+          err.timeout.should.be.exactly(100);
+          done();
+        },
+      );
+    });
+    it('should reject on timeout when flushing buffered output throws', function (done) {
+      this.timeout(3000);
+      PythonShell.run('print_invalid_json_then_sleep.py', {
+        mode: 'json',
+        timeout: 100,
+      }).then(
+        () => {
+          done(new Error('expected timeout rejection'));
+        },
+        (err) => {
+          err.should.be.an.Error;
+          err.message.should.be.exactly('process timed out after 100ms');
+          err.parserError.should.be.an.Error;
+          err.timeout.should.be.exactly(100);
+          done();
+        },
+      );
+    });
+    it('should use killSignal when timeout kills the process', function (done) {
+      this.timeout(3000);
+      let pyshell = new PythonShell('infinite_loop.py', {
+        timeout: 100,
+        killSignal: 'SIGKILL',
+      });
+      let originalKill = pyshell.kill.bind(pyshell);
+      pyshell.kill = function (signal) {
+        signal.should.be.exactly('SIGKILL');
+        return originalKill(signal);
+      };
+      pyshell.end(function (err) {
+        err.should.be.an.Error;
+        err.timeout.should.be.exactly(100);
         done();
       });
     });

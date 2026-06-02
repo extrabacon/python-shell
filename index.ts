@@ -66,11 +66,18 @@ export interface Options extends SpawnOptions {
    * arguments to your program
    */
   args?: string[];
+  /**
+   * maximum execution time in milliseconds before the process is killed
+   */
+  timeout?: number;
 }
 
 export class PythonShellError extends Error {
   traceback: string | Buffer;
   exitCode?: number;
+  exitSignal?: string;
+  timeout?: number;
+  parserError?: Error;
 }
 
 export class PythonShellErrorWithLogs extends PythonShellError {
@@ -122,6 +129,11 @@ export class PythonShell extends EventEmitter {
   exitCode: number;
   private stderrHasEnded: boolean;
   private stdoutHasEnded: boolean;
+  private timeoutId: NodeJS.Timeout;
+  private timeout: number;
+  private timedOut: boolean;
+  private timeoutParserError: Error;
+  private finished: boolean;
   private _remaining: string;
   private _endCallback: (
     err: PythonShellError,
@@ -171,7 +183,17 @@ export class PythonShell extends EventEmitter {
     let errorData = '';
     EventEmitter.call(this);
 
+    function flushSplitter(stream: Readable, splitter: Transform) {
+      if (stream && splitter) {
+        stream.unpipe(splitter);
+        splitter.end();
+      }
+    }
+
     options = <Options>extend({}, PythonShell.defaultOptions, options);
+    let timeout = options.timeout;
+    let spawnOptions = <Options>extend({}, options);
+    delete spawnOptions.timeout;
     let pythonPath: string;
     if (!options.pythonPath) {
       pythonPath = PythonShell.defaultPythonPath;
@@ -187,7 +209,38 @@ export class PythonShell extends EventEmitter {
     // We don't expect users to ever format stderr as JSON so we default to text mode
     this.stderrParser = resolve('parse', options.stderrParser || 'text');
     this.terminated = false;
-    this.childProcess = spawn(pythonPath, this.command, options);
+    this.childProcess = spawn(pythonPath, this.command, spawnOptions);
+
+    if (timeout > 0) {
+      this.timeout = timeout;
+      this.timeoutId = setTimeout(() => {
+        let killSignal = options.killSignal || 'SIGTERM';
+        self.timedOut = true;
+        if (self.exitCode == null && self.exitSignal == null) {
+          self.kill(killSignal);
+          if (killSignal !== 'SIGKILL') {
+            let forceKillTimer = setTimeout(() => {
+              if (self.exitCode == null && self.exitSignal == null) {
+                self.childProcess.kill('SIGKILL');
+              }
+            }, 100);
+            forceKillTimer.unref && forceKillTimer.unref();
+          }
+        }
+        try {
+          flushSplitter(self.stdout, stdoutSplitter);
+          flushSplitter(self.stderr, stderrSplitter);
+        } catch (err) {
+          self.timeoutParserError = err;
+        } finally {
+          self.stdoutHasEnded = true;
+          self.stderrHasEnded = true;
+          self.stdout && self.stdout.destroy();
+          self.stderr && self.stderr.destroy();
+        }
+        terminateIfNeeded();
+      }, timeout);
+    }
 
     ['stdout', 'stdin', 'stderr'].forEach(function (name) {
       self[name] = self.childProcess[name];
@@ -205,7 +258,15 @@ export class PythonShell extends EventEmitter {
       // note that setting the encoding turns the chunk into a string
       stdoutSplitter.setEncoding(options.encoding || 'utf8');
       this.stdout.pipe(stdoutSplitter).on('data', (chunk: string) => {
-        this.emit('message', self.parser(chunk));
+        try {
+          this.emit('message', self.parser(chunk));
+        } catch (err) {
+          if (self.timedOut) {
+            self.timeoutParserError = err;
+          } else {
+            throw err;
+          }
+        }
       });
     }
 
@@ -215,7 +276,15 @@ export class PythonShell extends EventEmitter {
       // note that setting the encoding turns the chunk into a string
       stderrSplitter.setEncoding(options.encoding || 'utf8');
       this.stderr.pipe(stderrSplitter).on('data', (chunk: string) => {
-        this.emit('stderr', self.stderrParser(chunk));
+        try {
+          this.emit('stderr', self.stderrParser(chunk));
+        } catch (err) {
+          if (self.timedOut) {
+            self.timeoutParserError = err;
+          } else {
+            throw err;
+          }
+        }
       });
     }
 
@@ -241,6 +310,10 @@ export class PythonShell extends EventEmitter {
     }
 
     this.childProcess.on('error', function (err: NodeJS.ErrnoException) {
+      if (self.timeoutId) {
+        clearTimeout(self.timeoutId);
+        self.timeoutId = null;
+      }
       self.emit('error', err);
     });
     this.childProcess.on('exit', function (code, signal) {
@@ -250,15 +323,47 @@ export class PythonShell extends EventEmitter {
     });
 
     function terminateIfNeeded() {
+      if (self.finished) {
+        return;
+      }
+
       if (
-        !self.stderrHasEnded ||
-        !self.stdoutHasEnded ||
-        (self.exitCode == null && self.exitSignal == null)
+        (!self.timedOut &&
+          (!self.stderrHasEnded ||
+            !self.stdoutHasEnded ||
+            (self.exitCode == null && self.exitSignal == null))) ||
+        (self.timedOut && self.exitCode == null && self.exitSignal == null)
       )
         return;
 
+      self.finished = true;
+
+      if (self.timeoutId) {
+        clearTimeout(self.timeoutId);
+        self.timeoutId = null;
+      }
+
       let err: PythonShellError;
-      if (self.exitCode && self.exitCode !== 0) {
+      if (self.timedOut) {
+        err = new PythonShellError(
+          'process timed out after ' + self.timeout + 'ms',
+        );
+        err = <PythonShellError>extend(err, {
+          executable: pythonPath,
+          options: pythonOptions.length ? pythonOptions : null,
+          script: self.scriptPath,
+          args: scriptArgs.length ? scriptArgs : null,
+          exitCode: self.exitCode,
+          exitSignal: self.exitSignal,
+          timeout: self.timeout,
+        });
+        if (self.timeoutParserError) {
+          err.parserError = self.timeoutParserError;
+        }
+        if (self.listeners('pythonError').length || !self._endCallback) {
+          self.emit('pythonError', err);
+        }
+      } else if (self.exitCode && self.exitCode !== 0) {
         if (errorData) {
           err = self.parseError(errorData);
         } else {
@@ -272,6 +377,7 @@ export class PythonShell extends EventEmitter {
           script: self.scriptPath,
           args: scriptArgs.length ? scriptArgs : null,
           exitCode: self.exitCode,
+          exitSignal: self.exitSignal,
         });
         // do not emit error if only a callback is used
         if (self.listeners('pythonError').length || !self._endCallback) {
@@ -450,7 +556,7 @@ export class PythonShell extends EventEmitter {
    * Sends a kill signal to the process
    * @returns {PythonShell} The same instance for chaining calls
    */
-  kill(signal?: NodeJS.Signals) {
+  kill(signal?: NodeJS.Signals | number) {
     this.terminated = this.childProcess.kill(signal);
     return this;
   }
@@ -459,7 +565,7 @@ export class PythonShell extends EventEmitter {
    * Alias for kill.
    * @deprecated
    */
-  terminate(signal?: NodeJS.Signals) {
+  terminate(signal?: NodeJS.Signals | number) {
     // todo: remove this next breaking release
     return this.kill(signal);
   }
