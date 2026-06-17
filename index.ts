@@ -86,7 +86,7 @@ export class NewlineTransformer extends Transform {
   _transform(chunk: any, encoding: string, callback: TransformCallback) {
     let data: string = chunk.toString();
     if (this._lastLineData) data = this._lastLineData + data;
-    const lines = data.split(newline);
+    const lines = data.split(/\r?\n/);
     this._lastLineData = lines.pop();
     lines.forEach(this.push.bind(this));
     callback();

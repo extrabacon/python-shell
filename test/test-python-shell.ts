@@ -1,5 +1,5 @@
 import * as should from 'should';
-import { PythonShell } from '..';
+import { PythonShell, NewlineTransformer } from '..';
 import { sep, join } from 'path';
 import { EOL as newline } from 'os';
 import { chdir, cwd } from 'process';
@@ -640,5 +640,27 @@ describe('PythonShell', function () {
         done();
       }, 500);
     });
+  });
+});
+
+describe('NewlineTransformer', function () {
+  function collect(input: Buffer): Promise<string[]> {
+    return new Promise((resolve) => {
+      const t = new NewlineTransformer();
+      t.setEncoding('utf8');
+      const out: string[] = [];
+      t.on('data', (chunk) => out.push(chunk.toString()));
+      t.on('end', () => resolve(out));
+      t.write(input);
+      t.end();
+    });
+  }
+
+  it('splits on \\n regardless of the platform line ending', async function () {
+    (await collect(Buffer.from('hello\nworld\n'))).should.eql(['hello', 'world']);
+  });
+
+  it('splits on \\r\\n', async function () {
+    (await collect(Buffer.from('hello\r\nworld\r\n'))).should.eql(['hello', 'world']);
   });
 });
