@@ -617,9 +617,9 @@ describe('PythonShell', function () {
   });
 
   describe('.kill()', function () {
-    it('set terminated to correct value', function (done) {
+    it('return kill result and set terminated to correct value', function (done) {
       let pyshell = new PythonShell('infinite_loop.py');
-      pyshell.kill();
+      should(pyshell.kill()).be.true();
       pyshell.terminated.should.be.true;
       done();
     });
