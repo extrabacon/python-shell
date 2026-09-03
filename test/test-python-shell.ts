@@ -1,5 +1,5 @@
 import * as should from 'should';
-import { PythonShell } from '..';
+import { NewlineTransformer, PythonShell } from '..';
 import { sep, join } from 'path';
 import { EOL as newline } from 'os';
 import { chdir, cwd } from 'process';
@@ -415,6 +415,51 @@ describe('PythonShell', function () {
         })
         .end(done);
     });
+    it('should report JSON parser errors through the end callback', function (done) {
+      let pyshell = new PythonShell('echo_text.py', {
+        mode: 'json',
+        formatter: 'text',
+      });
+      pyshell.send('not-json').end(function (err) {
+        should.exist(err);
+        err.should.be.an.Error;
+        err.message.should.match(/JSON|Unexpected token/);
+        done();
+      });
+    });
+    it('should not treat message listener exceptions as parser errors', function (done) {
+      let splitter = new NewlineTransformer();
+      let pyshell = new PythonShell('exit-code.py', { mode: 'text' }, splitter);
+      let listenerError = new Error('message listener failed');
+      let thrownError: Error;
+
+      pyshell.on('message', function () {
+        throw listenerError;
+      });
+
+      try {
+        splitter.emit('data', 'hello');
+      } catch (err) {
+        thrownError = err;
+      }
+
+      should.exist(thrownError);
+      thrownError.should.be.exactly(listenerError);
+      pyshell.end(function (err) {
+        should.not.exist(err);
+        done();
+      });
+    });
+    it('should prefer process errors over parser errors on non-zero exit', function (done) {
+      PythonShell.run('echo_hi_then_error.py', { mode: 'json' }).then(
+        () => done('expected the process to reject'),
+        (err) => {
+          err.message.should.be.exactly('Exception: fibble-fah');
+          err.stack.should.containEql('----- Python Traceback -----');
+          done();
+        },
+      );
+    });
     it('should properly buffer partial messages', function (done) {
       // echo_text_with_newline_control echoes text with $'s replaced with newlines
       let pyshell = new PythonShell('echo_text_with_newline_control.py', {
@@ -493,6 +538,46 @@ describe('PythonShell', function () {
         .send('hello')
         .send('world')
         .end(done);
+    });
+    it('should report stderr parser errors through the end callback', function (done) {
+      let pyshell = new PythonShell('stderrLogging.py', {
+        stderrParser: function () {
+          throw new Error('stderr parser failed');
+        },
+      });
+      pyshell.end(function (err) {
+        should.exist(err);
+        err.message.should.be.exactly('stderr parser failed');
+        done();
+      });
+    });
+    it('should not treat stderr listener exceptions as parser errors', function (done) {
+      let splitter = new NewlineTransformer();
+      let pyshell = new PythonShell(
+        'exit-code.py',
+        { mode: 'text' },
+        null,
+        splitter,
+      );
+      let listenerError = new Error('stderr listener failed');
+      let thrownError: Error;
+
+      pyshell.on('stderr', function () {
+        throw listenerError;
+      });
+
+      try {
+        splitter.emit('data', 'hello');
+      } catch (err) {
+        thrownError = err;
+      }
+
+      should.exist(thrownError);
+      thrownError.should.be.exactly(listenerError);
+      pyshell.end(function (err) {
+        should.not.exist(err);
+        done();
+      });
     });
     it('should not be invoked when mode is "binary"', function (done) {
       let pyshell = new PythonShell('stderrLogging.py', {

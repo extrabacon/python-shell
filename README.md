@@ -315,7 +315,7 @@ Fires when the process has been terminated, with an error or not.
 
 #### event: `pythonError`
 
-Fires when the process terminates with a non-zero exit code.
+Fires when the process terminates with a non-zero exit code or an output parser throws before normal completion. Parser exceptions are also passed to `.end()` and reject `PythonShell.run()`.
 
 #### event: `error`
 
