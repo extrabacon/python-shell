@@ -1,8 +1,9 @@
 import * as should from 'should';
-import { PythonShell } from '..';
+import { NewlineTransformer, PythonShell } from '..';
 import { sep, join } from 'path';
 import { EOL as newline } from 'os';
 import { chdir, cwd } from 'process';
+import { Transform } from 'stream';
 
 describe('PythonShell', function () {
   const pythonFolder = 'test/python';
@@ -535,6 +536,118 @@ describe('PythonShell', function () {
   });
 
   describe('.end(callback)', function () {
+    for (const stream of ['stdout', 'stderr']) {
+      for (const phase of ['transform', 'flush']) {
+        for (const exitCode of [0, 7]) {
+          it(`should wait for asynchronous ${stream} ${phase} before completing with code ${exitCode}`, async function () {
+            let release: () => void;
+            const childClosed = new Promise<void>((resolve) => {
+              release = resolve;
+            });
+            class AsyncSplitter extends NewlineTransformer {
+              _transform(chunk, encoding, callback) {
+                if (phase === 'transform') {
+                  childClosed.then(() =>
+                    super._transform(chunk, encoding, callback),
+                  );
+                } else {
+                  super._transform(chunk, encoding, callback);
+                }
+              }
+              _flush(callback) {
+                if (phase === 'flush') {
+                  childClosed.then(() => super._flush(callback));
+                } else {
+                  super._flush(callback);
+                }
+              }
+            }
+            const splitter = new AsyncSplitter();
+            const output = phase === 'transform' ? 'tail\n' : 'tail';
+            // Hold processing until the real child has closed, without timing assumptions.
+            const pyshell = new PythonShell(
+              '-c',
+              {
+                scriptPath: '',
+                args: [
+                  `import sys; sys.${stream}.write(${JSON.stringify(output)}); sys.exit(${exitCode})`,
+                ],
+              },
+              stream === 'stdout' ? splitter : null,
+              stream === 'stderr' ? splitter : null,
+            );
+            pyshell.childProcess.once('close', release);
+            const events = [];
+            pyshell.on(stream === 'stdout' ? 'message' : 'stderr', (data) => {
+              events.push(data);
+            });
+            pyshell.on('close', () => events.push('close'));
+            const splitterEnded = new Promise<void>((resolve, reject) => {
+              splitter.once('end', resolve);
+              splitter.once('error', reject);
+            });
+            const completed = new Promise<void>((resolve, reject) => {
+              pyshell.once('error', reject);
+              pyshell.end((err, code) => {
+                try {
+                  code.should.equal(exitCode);
+                  if (exitCode) {
+                    err.exitCode.should.equal(exitCode);
+                    err.message.should.equal(
+                      stream === 'stderr'
+                        ? output.replace(/\n/g, newline)
+                        : 'process exited with code 7',
+                    );
+                  } else {
+                    should.not.exist(err);
+                  }
+                  events.push('end');
+                  resolve();
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            });
+            await Promise.all([completed, splitterEnded]);
+            events.should.eql(['tail', 'close', 'end']);
+          });
+        }
+      }
+    }
+
+    it('should collect all stderr when its splitter ends before the source', function (done) {
+      const splitter = new Transform({
+        transform(chunk, encoding, callback) {
+          this.push(null);
+          callback();
+        },
+      });
+      const pyshell = new PythonShell(
+        '-c',
+        {
+          scriptPath: '',
+          args: [
+            'import sys; sys.stderr.write("prefix"); sys.stderr.flush(); ' +
+              'sys.stdin.readline(); sys.stderr.write("tail"); sys.exit(7)',
+          ],
+        },
+        null,
+        splitter,
+      );
+      pyshell.once('error', done);
+      pyshell.stderr.once('data', () => {
+        pyshell.stderr.pause();
+        pyshell.send('continue').end((err) => {
+          err.message.should.equal('prefixtail');
+          err.exitCode.should.equal(7);
+          done();
+        });
+      });
+      pyshell.childProcess.once('exit', () => {
+        setImmediate(() => pyshell.stderr.resume());
+      });
+    });
+
     it('should end normally when exit code is zero', function (done) {
       let pyshell = new PythonShell('exit-code.py');
       pyshell.end(function (err, code, signal) {

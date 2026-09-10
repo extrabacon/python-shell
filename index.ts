@@ -169,6 +169,9 @@ export class PythonShell extends EventEmitter {
 
     let self = this;
     let errorData = '';
+    // A splitter can finish before or after its source stream.
+    let stdoutSplitterHasEnded = true;
+    let stderrSplitterHasEnded = true;
     EventEmitter.call(this);
 
     options = <Options>extend({}, PythonShell.defaultOptions, options);
@@ -201,21 +204,31 @@ export class PythonShell extends EventEmitter {
     // for example JSON parsing breaks if it recieves partial JSON
     // so we use newlineTransformer to emit each batch seperated by newline
     if (this.parser && this.stdout) {
+      stdoutSplitterHasEnded = false;
       if (!stdoutSplitter) stdoutSplitter = new NewlineTransformer();
       // note that setting the encoding turns the chunk into a string
       stdoutSplitter.setEncoding(options.encoding || 'utf8');
       this.stdout.pipe(stdoutSplitter).on('data', (chunk: string) => {
         this.emit('message', self.parser(chunk));
       });
+      stdoutSplitter.on('end', () => {
+        stdoutSplitterHasEnded = true;
+        terminateIfNeeded();
+      });
     }
 
     // listen to stderr and emit errors for incoming data
     if (this.stderrParser && this.stderr) {
+      stderrSplitterHasEnded = false;
       if (!stderrSplitter) stderrSplitter = new NewlineTransformer();
       // note that setting the encoding turns the chunk into a string
       stderrSplitter.setEncoding(options.encoding || 'utf8');
       this.stderr.pipe(stderrSplitter).on('data', (chunk: string) => {
         this.emit('stderr', self.stderrParser(chunk));
+      });
+      stderrSplitter.on('end', () => {
+        stderrSplitterHasEnded = true;
+        terminateIfNeeded();
       });
     }
 
@@ -253,6 +266,8 @@ export class PythonShell extends EventEmitter {
       if (
         !self.stderrHasEnded ||
         !self.stdoutHasEnded ||
+        !stdoutSplitterHasEnded ||
+        !stderrSplitterHasEnded ||
         (self.exitCode == null && self.exitSignal == null)
       )
         return;
